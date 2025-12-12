@@ -50,7 +50,7 @@ Agentsを使用してコミットを作成する場合は、必ず`Co-Authored-B
 ```
 add: ユーザー認証機能を追加
 
-Co-Authored-By: OpenAI Agent <noreply@openai.com>
+Co-authored-by: Codex (AI assistant) [codex-bot@noreply.example.com](mailto:codex-bot@noreply.example.com)
 ```
 
 これにより、AIが作成したコミットであることが明確になります。
