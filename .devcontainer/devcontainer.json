@@ -12,9 +12,11 @@
     }
   },
 
-  "postCreateCommand": [
-    "npm install -g @anthropic-ai/claude-code",
-    "npm install -g @openai/codex"
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code @openai/codex && sudo chown -R vscode:vscode /home/vscode/.claude /home/vscode/.codex",
+
+  "mounts": [
+    "source=claude-config,target=/home/vscode/.claude,type=volume",
+    "source=codex-config,target=/home/vscode/.codex,type=volume"
   ],
 
   "customizations": {
