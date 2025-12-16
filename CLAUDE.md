@@ -4,53 +4,71 @@
 
 ## ブランチ命名規則
 
-ブランチ名には必ずprefixを付けてください。
+ブランチ名には必ずprefixを付けてください（prefixはConventional Commitsのtypeに準拠します）。
 
 ### 使用可能なprefix
-- `add` - 新機能追加
+- `feat` - 新機能追加
 - `fix` - バグ修正
-- `update` - 既存機能の更新
-- `refac` - リファクタリング
 - `docs` - ドキュメント
-- `chore` - その他（設定、ビルド、雑務など）
+- `refactor` - リファクタリング（機能変更なし）
+- `test` - テスト追加・修正
+- `perf` - パフォーマンス改善
+- `build` - ビルド関連（依存関係、ビルドツールなど）
+- `ci` - CI関連
+- `chore` - その他（雑務、ツール設定など）
 
 ### 例
 ```
-add/user-authentication
+feat/user-authentication
 fix/login-button-crash
-update/error-handling
-refac/api-client
+refactor/api-client
 docs/readme-update
 chore/eslint-setup
 ```
 
 ## コミットメッセージ
 
-コミットメッセージは**簡潔**に書いてください。必ずprefixを付けてください。
+コミットメッセージは **Conventional Commits 1.0.0** に準拠します。短く、意図が分かるように書いてください。
 
 ### 形式
 ```
-prefix: 変更内容の簡潔な説明
+<type>[optional scope][optional !]: <description>
+
+[optional body]
+
+[optional footer(s)]
 ```
+
+### ルール
+- `type` は上のprefix一覧から選ぶ（基本は `feat` / `fix` / `refactor` / `docs` / `test` / `chore`）
+- `scope` は任意（例: `feat(api): ...` / `fix(frontend): ...`）
+- 破壊的変更は `!` を付ける（例: `feat(api)!: ...`）
+- 破壊的変更の説明を明確にしたい場合は footer に `BREAKING CHANGE: ...` を書く
 
 ### 例
 ```
-add: ユーザー認証機能を追加
+feat: ユーザー認証機能を追加
 fix: ログインボタンのクラッシュを修正
-update: エラーハンドリングを改善
-refac: APIクライアントのコードを整理
+refactor: APIクライアントのコードを整理
 docs: READMEにセットアップ手順を追加
 chore: ESLintの設定を追加
+
+feat(api): 認証トークンの検証を追加
+fix(frontend): ログイン画面での例外を修正
+
+feat(api)!: 認証エンドポイントを刷新
+
+BREAKING CHANGE: `/v1/auth/login` を廃止し `/v2/auth/login` に変更
 ```
 
 ### Claude Codeを使用したコミット
 
-Claude Codeを使用してコミットを作成する場合は、必ず`Co-Authored-By`を含めてください。
+Claude Codeを使用してコミットを作成する場合は、footer（trailer）として `Co-authored-by:` を含めてください。
 
 ```
-add: ユーザー認証機能を追加
+feat: ユーザー認証機能を追加
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 これにより、AIが作成したコミットであることが明確になります。
@@ -60,9 +78,9 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 PRのタイトルとボディは**日本語**で**シンプル**に書いてください。
 
 ### タイトル形式
-コミットメッセージと同じ形式で構いません。
+コミットメッセージと同じ形式（Conventional Commits）にしてください。
 ```
-add: ユーザー認証機能
+feat: ユーザー認証機能
 ```
 
 ### ボディ
