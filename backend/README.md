@@ -82,7 +82,7 @@
 │           └── cloudtasks/
 │
 ├── configs/
-├── migrations/              # Postgres使用時
+├── migrations/              # Postgresを使う場合のみ
 ├── go.mod
 └── README.md
 ```
