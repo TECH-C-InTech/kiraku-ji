@@ -21,6 +21,8 @@ jobs:
         with:
           version: v1.55
           args: --timeout 5m --enable=gofmt
+        working-directory: backend
 
       - name: Run tests
         run: go test ./...
+        working-directory: backend
