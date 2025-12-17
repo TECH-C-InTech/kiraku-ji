@@ -3,6 +3,8 @@ name: go-ci
 on:
   pull_request:
     types: [opened, synchronize]
+    paths:
+      - 'backend/**'
 
 permissions:
   contents: read
