@@ -2,14 +2,14 @@ package post
 
 import "errors"
 
-// DarkPostID は闇投稿を一意に識別する ID。
-type DarkPostID string
-
-// DarkContent は整形前の闇投稿本文。
-type DarkContent string
-
-// Status は闇投稿の状態を表す。
-type Status string
+type (
+	// 闇投稿を一意に識別する ID。
+	DarkPostID string
+	// 整形前本文
+	DarkContent string
+	// 闇投稿の状態
+	Status string
+)
 
 const (
 	StatusPending Status = "pending"
