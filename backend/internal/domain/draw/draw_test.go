@@ -33,7 +33,7 @@ func TestNew_EmptyResult(t *testing.T) {
 func TestFromPost(t *testing.T) {
 	t.Parallel()
 
-	p, err := post.New(post.DarkPostID("post-id"), "闇が深い")
+	p, err := post.New(post.DarkPostID("post-id"), post.DarkContent("闇が深い"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestFromPost(t *testing.T) {
 func TestFromPost_NotReady(t *testing.T) {
 	t.Parallel()
 
-	p, err := post.New(post.DarkPostID("post-id"), "闇")
+	p, err := post.New(post.DarkPostID("post-id"), post.DarkContent("闇"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

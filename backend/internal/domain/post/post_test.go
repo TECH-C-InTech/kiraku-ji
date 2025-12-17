@@ -5,7 +5,7 @@ import "testing"
 func TestNew(t *testing.T) {
 	t.Parallel()
 
-	post, err := New(DarkPostID("post-id"), "闇がおおい")
+	post, err := New(DarkPostID("post-id"), DarkContent("闇がおおい"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -13,8 +13,8 @@ func TestNew(t *testing.T) {
 	if post.ID() != DarkPostID("post-id") {
 		t.Fatalf("unexpected id: %s", string(post.ID()))
 	}
-	if post.Content() != "闇がおおい" {
-		t.Fatalf("unexpected content: %s", post.Content())
+	if post.Content() != DarkContent("闇がおおい") {
+		t.Fatalf("unexpected content: %s", string(post.Content()))
 	}
 	if post.Status() != StatusPending {
 		t.Fatalf("expected pending but got %s", post.Status())
@@ -24,7 +24,7 @@ func TestNew(t *testing.T) {
 func TestNew_EmptyContent(t *testing.T) {
 	t.Parallel()
 
-	if _, err := New(DarkPostID("post-id"), ""); err != ErrEmptyContent {
+	if _, err := New(DarkPostID("post-id"), DarkContent("")); err != ErrEmptyContent {
 		t.Fatalf("expected ErrEmptyContent but got %v", err)
 	}
 }
@@ -32,7 +32,7 @@ func TestNew_EmptyContent(t *testing.T) {
 func TestMarkReady(t *testing.T) {
 	t.Parallel()
 
-	post, err := New(DarkPostID("id"), "闇")
+	post, err := New(DarkPostID("id"), DarkContent("闇"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestMarkReady(t *testing.T) {
 func TestMarkReady_InvalidTransition(t *testing.T) {
 	t.Parallel()
 
-	post, err := Restore(DarkPostID("id"), "闇", StatusReady)
+	post, err := Restore(DarkPostID("id"), DarkContent("闇"), StatusReady)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestMarkReady_InvalidTransition(t *testing.T) {
 func TestRestore_InvalidStatus(t *testing.T) {
 	t.Parallel()
 
-	if _, err := Restore(DarkPostID("id"), "闇", Status("unknown")); err != ErrInvalidStatus {
+	if _, err := Restore(DarkPostID("id"), DarkContent("闇"), Status("unknown")); err != ErrInvalidStatus {
 		t.Fatalf("expected ErrInvalidStatus but got %v", err)
 	}
 }
