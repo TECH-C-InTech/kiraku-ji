@@ -26,7 +26,8 @@ type Post struct {
 	status  Status
 }
 
-// New は新しい闇投稿を pending 状態で作成する。
+// New creates a Post with the given id and content and sets its status to StatusPending.
+// It returns ErrEmptyContent if content is empty.
 func New(id, content string) (*Post, error) {
 	if content == "" {
 		return nil, ErrEmptyContent
@@ -39,7 +40,9 @@ func New(id, content string) (*Post, error) {
 	}, nil
 }
 
-// Restore は既存の投稿を再構築する。
+// Restore reconstructs an existing Post using the given id, content, and status.
+// It returns ErrEmptyContent when content is empty and ErrInvalidStatus when the
+// provided status is not a recognized Status.
 func Restore(id, content string, status Status) (*Post, error) {
 	if content == "" {
 		return nil, ErrEmptyContent

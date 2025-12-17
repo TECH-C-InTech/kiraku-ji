@@ -23,7 +23,8 @@ type Draw struct {
 	result string
 }
 
-// New は Post ID と結果から Draw を生成する。
+// New creates a Draw for the given post ID and result.
+// It returns ErrEmptyPostID if postID is empty and ErrEmptyResult if result is empty.
 func New(postID, result string) (*Draw, error) {
 	if postID == "" {
 		return nil, ErrEmptyPostID
@@ -38,7 +39,8 @@ func New(postID, result string) (*Draw, error) {
 	}, nil
 }
 
-// FromPost は ready な Post から Draw を生成する。
+// FromPost creates a Draw for the given Post using the Post's ID and the supplied result.
+// It returns ErrNilPost if p is nil, ErrPostNotReady if p.IsReady() is false, or a validation error if the provided result is empty.
 func FromPost(p *post.Post, result string) (*Draw, error) {
 	if p == nil {
 		return nil, ErrNilPost
