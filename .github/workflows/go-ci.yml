@@ -1,0 +1,45 @@
+name: go-ci
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'backend/**'
+
+permissions:
+  contents: read
+
+jobs:
+  go-ci:
+    runs-on: ubuntu-slim
+    defaults:
+      run:
+        working-directory: backend
+
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version: "1.25.5"
+
+      - name: Check format
+        run: |
+          files=$(git ls-files '*.go' ':!:vendor/**')
+          [ -z "$files" ] && exit 0
+          echo "$files" | xargs -r gofmt -l | tee /tmp/gofmt.log
+          if [ -s /tmp/gofmt.log ]; then
+            echo "gofmt needed:"
+            cat /tmp/gofmt.log
+            exit 1
+          fi
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7.0.1
+        with:
+          working-directory: backend
+          version: v2.7.2
+          args: --timeout 5m
+
+      - name: Run tests
+        run: go test ./...
