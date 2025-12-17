@@ -17,14 +17,17 @@ var (
 	ErrPostNotReady = errors.New("draw: post is not ready")
 )
 
+// 整形後のおみくじ本文。
+type FormattedContent string
+
 // Draw はおみくじ結果を表す。
 type Draw struct {
 	postID post.DarkPostID
-	result string
+	result FormattedContent
 }
 
 // New は Post ID と結果から Draw を生成する。
-func New(postID post.DarkPostID, result string) (*Draw, error) {
+func New(postID post.DarkPostID, result FormattedContent) (*Draw, error) {
 	if postID == "" {
 		return nil, ErrEmptyPostID
 	}
@@ -39,7 +42,7 @@ func New(postID post.DarkPostID, result string) (*Draw, error) {
 }
 
 // FromPost は ready な Post から Draw を生成する。
-func FromPost(p *post.Post, result string) (*Draw, error) {
+func FromPost(p *post.Post, result FormattedContent) (*Draw, error) {
 	if p == nil {
 		return nil, ErrNilPost
 	}
@@ -56,6 +59,6 @@ func (d *Draw) PostID() post.DarkPostID {
 }
 
 // Result はおみくじ結果の本文を返す。
-func (d *Draw) Result() string {
+func (d *Draw) Result() FormattedContent {
 	return d.result
 }

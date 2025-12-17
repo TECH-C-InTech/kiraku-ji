@@ -9,7 +9,7 @@ import (
 func TestNew(t *testing.T) {
 	t.Parallel()
 
-	draw, err := New(post.DarkPostID("post-id"), "やさしい言葉")
+	draw, err := New(post.DarkPostID("post-id"), FormattedContent("やさしい言葉"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -17,15 +17,15 @@ func TestNew(t *testing.T) {
 	if draw.PostID() != post.DarkPostID("post-id") {
 		t.Fatalf("unexpected post id: %s", string(draw.PostID()))
 	}
-	if draw.Result() != "やさしい言葉" {
-		t.Fatalf("unexpected result: %s", draw.Result())
+	if draw.Result() != FormattedContent("やさしい言葉") {
+		t.Fatalf("unexpected result: %s", string(draw.Result()))
 	}
 }
 
 func TestNew_EmptyResult(t *testing.T) {
 	t.Parallel()
 
-	if _, err := New(post.DarkPostID("post-id"), ""); err != ErrEmptyResult {
+	if _, err := New(post.DarkPostID("post-id"), FormattedContent("")); err != ErrEmptyResult {
 		t.Fatalf("expected ErrEmptyResult but got %v", err)
 	}
 }
@@ -41,7 +41,7 @@ func TestFromPost(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	draw, err := FromPost(p, "やさしい言葉")
+	draw, err := FromPost(p, FormattedContent("やさしい言葉"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestFromPost_NotReady(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if _, err := FromPost(p, "まだ早い"); err != ErrPostNotReady {
+	if _, err := FromPost(p, FormattedContent("まだ早い")); err != ErrPostNotReady {
 		t.Fatalf("expected ErrPostNotReady but got %v", err)
 	}
 }
