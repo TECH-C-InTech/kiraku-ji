@@ -19,12 +19,12 @@ var (
 
 type (
 	FormattedContent string
-	Status string
+	Status           string
 )
 
 // Status の種類
 const (
-	StatusPending Status = "pending"
+	StatusPending  Status = "pending"
 	StatusVerified Status = "verified"
 	StatusRejected Status = "rejected"
 )
