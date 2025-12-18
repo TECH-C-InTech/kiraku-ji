@@ -2,9 +2,16 @@ package post
 
 import (
 	"context"
+	"errors"
 
+	"backend/internal/domain/post"
 	"backend/internal/port/queue"
 	"backend/internal/port/repository"
+)
+
+var (
+	// ErrNilInput はユースケースに nil 入力が渡された際に返される。
+	ErrNilInput = errors.New("create_post: input is nil")
 )
 
 // 闇投稿作成の入力値
@@ -42,6 +49,22 @@ func NewCreatePostUsecase(postRepo repository.PostRepository, jobQueue queue.Job
  * 闇投稿作成の実行
  */
 func (u *CreatePostUsecase) Execute(ctx context.Context, in *CreatePostInput) (*CreatePostOutput, error) {
-	// TODO: 実装（post.New -> PostRepository.Create -> JobQueue.EnqueueFormat）
-	return nil, nil
+	if in == nil {
+		return nil, ErrNilInput
+	}
+
+	p, err := post.New(post.DarkPostID(in.DarkPostID), post.DarkContent(in.Content))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := u.postRepo.Create(ctx, p); err != nil {
+		return nil, err
+	}
+
+	if err := u.jobQueue.EnqueueFormat(ctx, p.ID()); err != nil {
+		return nil, err
+	}
+
+	return &CreatePostOutput{DarkPostID: string(p.ID())}, nil
 }
