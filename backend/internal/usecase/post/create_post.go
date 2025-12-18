@@ -12,6 +12,10 @@ import (
 var (
 	// ErrNilInput はユースケースに nil 入力が渡された際に返される。
 	ErrNilInput = errors.New("create_post: input is nil")
+	// ErrPostAlreadyExists は投稿が既に存在していた際に返される。
+	ErrPostAlreadyExists = errors.New("create_post: post already exists")
+	// ErrJobAlreadyScheduled は整形ジョブが重複していた際に返される。
+	ErrJobAlreadyScheduled = errors.New("create_post: format job already scheduled")
 )
 
 // 闇投稿作成の入力値
@@ -59,10 +63,18 @@ func (u *CreatePostUsecase) Execute(ctx context.Context, in *CreatePostInput) (*
 	}
 
 	if err := u.postRepo.Create(ctx, p); err != nil {
+		if errors.Is(err, repository.ErrPostAlreadyExists) {
+			return nil, ErrPostAlreadyExists
+		}
+
 		return nil, err
 	}
 
 	if err := u.jobQueue.EnqueueFormat(ctx, p.ID()); err != nil {
+		if errors.Is(err, queue.ErrJobAlreadyScheduled) {
+			return nil, ErrJobAlreadyScheduled
+		}
+
 		return nil, err
 	}
 
