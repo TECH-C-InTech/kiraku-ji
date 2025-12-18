@@ -173,3 +173,22 @@ usecase はここだけに依存します。
 - `adapter/http`：httptest による API テスト
 
 - DB 統合テスト
+
+## 手動動作確認（/draws/random）
+
+```
+# 1. API サーバーを起動
+cd backend
+go run ./cmd/api
+
+# 2. 別ターミナルからリクエスト
+curl -i localhost:8080/draws/random
+```
+
+環境変数 `DRAW_REPOSITORY_MODE` によりリポジトリの挙動を切り替えられます。  
+
+| モード | 起動例 | 期待されるレスポンス |
+| --- | --- | --- |
+| (空) / `default` | `DRAW_REPOSITORY_MODE=default go run ./cmd/api` | Verified が存在するため `200 OK` |
+| `empty` | `DRAW_REPOSITORY_MODE=empty go run ./cmd/api` | Verified が無く `404 Not Found`（`message=no verified draws available`） |
+| `error` | `DRAW_REPOSITORY_MODE=error go run ./cmd/api` | リポジトリ強制エラーで `500 Internal Server Error` |
