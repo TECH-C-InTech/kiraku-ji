@@ -18,19 +18,14 @@ var (
 )
 
 type (
-	// 整形後のおみくじ本文
 	FormattedContent string
-	// おみくじ結果の状態
-	Status string
+	Status           string
 )
 
 // Status の種類
 const (
-	// 整形直後で検証前の状態。
-	StatusPending Status = "pending"
-	// 検証済みで公開可能な状態。
+	StatusPending  Status = "pending"
 	StatusVerified Status = "verified"
-	// 整形結果に問題があり却下された状態。
 	StatusRejected Status = "rejected"
 )
 
