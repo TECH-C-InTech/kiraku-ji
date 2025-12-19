@@ -19,7 +19,7 @@ type GeminiConfig struct {
 }
 
 /**
- * 環境変数から読み込んでGemni連携に使用 
+ * 環境変数から読み込んでGemini連携に使用
  */
 
 func LoadGeminiConfigFromEnv() (*GeminiConfig, error) {
