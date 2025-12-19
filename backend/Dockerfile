@@ -4,32 +4,39 @@ FROM golang:${GO_VERSION}-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod files
+# go modファイルをコピー
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
+# ソースコードをコピー
 COPY . .
 
-# Build the API binary
+# APIバイナリをビルド
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api ./cmd/api
 
 # Runtime stage
-FROM alpine:latest
+FROM alpine:3.23
 
 WORKDIR /app
 
-# Install CA certificates for HTTPS requests
+# HTTPS通信用のCA証明書をインストール
 RUN apk --no-cache add ca-certificates
 
-# Copy the binary from builder
-COPY --from=builder /app/api .
+# 非rootユーザーを作成
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser
 
-# Cloud Run uses PORT environment variable (default: 8080)
+# ビルダーからバイナリをコピー
+COPY --from=builder --chown=appuser:appuser /app/api .
+
+# 非rootユーザーに切り替え
+USER appuser
+
+# Cloud RunはPORT環境変数を使用（デフォルト: 8080）
 ENV PORT=8080
 
-# Expose the port
+# ポートを公開
 EXPOSE 8080
 
-# Run the API
+# APIを起動
 CMD ["./api"]
