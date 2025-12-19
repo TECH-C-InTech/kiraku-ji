@@ -101,7 +101,7 @@ func TestFormatter_ValidateSuccess(t *testing.T) {
 	f := &Formatter{}
 	result := &llm.FormatResult{
 		DarkPostID:       post.DarkPostID("post-verified"),
-		FormattedContent: drawdomain.FormattedContent(strings.Repeat("前向きな文章", 2)),
+		FormattedContent: drawdomain.FormattedContent("今日の闇みくじ: 現状を静かに見守ります。慎重に動きを整えます。結果は明るさを取り戻します。"),
 	}
 
 	validated, err := f.Validate(context.Background(), result)
@@ -120,7 +120,7 @@ func TestFormatter_ValidateRejectsUnsafeText(t *testing.T) {
 	f := &Formatter{}
 	result := &llm.FormatResult{
 		DarkPostID:       post.DarkPostID("post-reject"),
-		FormattedContent: drawdomain.FormattedContent("This text says I want to kill time http://example.com"),
+		FormattedContent: drawdomain.FormattedContent("今日の闇みくじ: 今はkillを連想します。行動は静かに様子見します。最後は光を掴みます。"),
 	}
 
 	validated, err := f.Validate(context.Background(), result)
@@ -144,6 +144,40 @@ func TestFormatter_ValidateEmptyText(t *testing.T) {
 
 	if _, err := f.Validate(context.Background(), result); err == nil || !errors.Is(err, llm.ErrInvalidFormat) {
 		t.Fatalf("expected invalid format error, got %v", err)
+	}
+}
+
+func TestFormatter_ValidateRejectsMissingPrefix(t *testing.T) {
+	f := &Formatter{}
+	result := &llm.FormatResult{
+		DarkPostID:       post.DarkPostID("post-missing-prefix"),
+		FormattedContent: drawdomain.FormattedContent("闇みくじ: 現状を静かに考えます。丁寧に行動を選びます。明日へと希望を繋げます。"),
+	}
+
+	if _, err := f.Validate(context.Background(), result); err == nil || !errors.Is(err, llm.ErrContentRejected) {
+		t.Fatalf("expected rejection due to missing prefix, got %v", err)
+	}
+}
+
+func TestFormatter_ValidateRejectsSentenceCount(t *testing.T) {
+	f := &Formatter{}
+	result := &llm.FormatResult{
+		DarkPostID: post.DarkPostID("post-missing-sentence"),
+		FormattedContent: drawdomain.FormattedContent(
+			"今日の闇みくじ: 現状を静かに見守ります。慎重に動きを整えます。"),
+	}
+
+	if _, err := f.Validate(context.Background(), result); err == nil || !errors.Is(err, llm.ErrContentRejected) {
+		t.Fatalf("expected rejection due to sentence count, got %v", err)
+	}
+}
+
+func TestFormatter_NormalizeFortuneText(t *testing.T) {
+	raw := "今日の闇みくじ:\r\n 一文目です。\n 二文目です。\n 三文目です。"
+	got := normalizeFortuneText(raw)
+	want := "今日の闇みくじ: 一文目です。 二文目です。 三文目です。"
+	if got != want {
+		t.Fatalf("normalizeFortuneText mismatch\ngot:  %q\nwant: %q", got, want)
 	}
 }
 
@@ -389,7 +423,8 @@ func TestShouldReject(t *testing.T) {
 	if reason, rejected := shouldReject("visit https://example.com"); !rejected || !strings.Contains(reason, "URL") {
 		t.Fatalf("expected rejection for url, got %v", reason)
 	}
-	if reason, rejected := shouldReject(strings.Repeat("優しい言葉", 5)); rejected {
+	valid := "今日の闇みくじ: 今は静かに整えます。行動は穏やかに選びます。結末は柔らかく明けます。"
+	if reason, rejected := shouldReject(valid); rejected {
 		t.Fatalf("unexpected rejection: %v", reason)
 	}
 }

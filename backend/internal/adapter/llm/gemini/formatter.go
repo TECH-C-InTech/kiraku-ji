@@ -15,9 +15,11 @@ import (
 )
 
 const (
-	defaultModelName   = "gemini-2.5-flash"
-	maxFormattedLength = 400
-	minFormattedLength = 12
+	defaultModelName      = "gemini-2.5-flash"
+	maxFormattedLength    = 400
+	minFormattedLength    = 12
+	fortunePrefix         = "今日の闇みくじ:"
+	expectedSentenceCount = 3
 )
 
 var rejectionKeywords = []string{"kill", "suicide", "die"}
@@ -128,14 +130,15 @@ func (f *Formatter) Validate(ctx context.Context, result *llm.FormatResult) (*ll
 		return result, llm.ErrInvalidFormat
 	}
 
-	if reason, rejected := shouldReject(trimmed); rejected {
+	normalized := normalizeFortuneText(trimmed)
+	if reason, rejected := shouldReject(normalized); rejected {
 		result.Status = drawdomain.StatusRejected
 		result.ValidationReason = reason
 		return result, llm.ErrContentRejected
 	}
 
 	result.Status = drawdomain.StatusVerified
-	result.FormattedContent = drawdomain.FormattedContent(trimmed)
+	result.FormattedContent = drawdomain.FormattedContent(normalized)
 	result.ValidationReason = ""
 
 	return result, nil
@@ -169,17 +172,32 @@ func resolveModelName(name string) string {
  */
 func buildPrompt(content string) string {
 	template := `
-あなたは他人の闇投稿を受け取り、別の人が引く「闇おみくじ」に変換する占い師です。
-- Aさんの闇を元に、Aさんのことを知らないBさん向けの占い結果を必ず 3 文で書き、合計 120〜150 文字になるよう調整する
-- 冒頭を「今日の闇みくじ:」で始め、句点（。）で区切った 3 文すべてをです・ます調で書く
-- 1 文目は現在の状況、2 文目は賢明な行動、3 文目は明るい結末を描写し、各文を「〜ます。」で完結させる
-- URL、顔文字、箇条書き、具体的な固有名詞は禁止
-- Aさんへの直接メッセージにはせず、あくまで B さんが引くおみくじとして仕上げる
-- 余計な前置きは不要。すぐにお告げを書き始め、最後まで肯定的な余韻で締める
+あなたは他人の闇投稿をもとに B さん向けの「闇おみくじ」を作る占い師です。出力は日本語のみで行い、以下の指示を厳守してください。
+
+【文章ルール】
+1. 合計 120〜150 文字の 3 文構成で書く
+2. 各文の内容: (1) 今の状況 (2) 取るべき行動 (3) 前向きな結末
+3. 3 文すべて「〜ます。」で終え、句点（。）で区切る
+4. 固有名詞・URL・箇条書き・顔文字・直接的な励ましは禁止
+5. A さん個人に語りかけず、B さんが引く一般的なおみくじとして書く
+
+【出力フォーマット】
+今日の闇みくじ: 一文目。二文目。三文目。
+- 冒頭は必ず「今日の闇みくじ:」ではじめ、余計な前置きや後書きは不要
+- 改行せず 1 行で書ききる
+
+【良い例】
+今日の闇みくじ: 今は静かに評価を待ちます。呼吸を整えて自分の歩調を守ります。最後には穏やかな光が差し込みます。
+
+【悪い例】
+・4 文以上、または 2 文以下
+・途中で改行する
+・〜ます。以外の語尾で終える
+
+上記ルールを完全に満たす文章だけを 1 行で返してください。
 
 元になった闇投稿:
-%s
-`
+%s`
 	return fmt.Sprintf(strings.TrimSpace(template), strings.TrimSpace(content))
 }
 
@@ -245,7 +263,46 @@ func shouldReject(text string) (string, bool) {
 	if strings.Contains(lower, "http://") || strings.Contains(lower, "https://") {
 		return "URL は含めないでください", true
 	}
+	if !strings.HasPrefix(text, fortunePrefix) {
+		return fmt.Sprintf("冒頭は「%s」で始めてください", fortunePrefix), true
+	}
+	if reason, rejected := violatesFortuneStructure(text); rejected {
+		return reason, true
+	}
 	return "", false
+}
+
+func normalizeFortuneText(text string) string {
+	noCR := strings.ReplaceAll(text, "\r", "")
+	noLF := strings.ReplaceAll(noCR, "\n", "")
+	return strings.TrimSpace(noLF)
+}
+
+func violatesFortuneStructure(text string) (string, bool) {
+	body := strings.TrimSpace(strings.TrimPrefix(text, fortunePrefix))
+	sentences := splitSentences(body)
+	if len(sentences) != expectedSentenceCount {
+		return "お告げは3文構成で書いてください", true
+	}
+	for idx, sentence := range sentences {
+		if !strings.HasSuffix(sentence, "ます") {
+			return fmt.Sprintf("%d文目は「〜ます」で終えてください", idx+1), true
+		}
+	}
+	return "", false
+}
+
+func splitSentences(body string) []string {
+	raw := strings.Split(body, "。")
+	sentences := make([]string, 0, len(raw))
+	for _, part := range raw {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		sentences = append(sentences, trimmed)
+	}
+	return sentences
 }
 
 /**
