@@ -22,7 +22,6 @@ type CreatePostExecutor interface {
 	Execute(ctx context.Context, in *postusecase.CreatePostInput) (*postusecase.CreatePostOutput, error)
 }
 
-// PostHandler は投稿関連の HTTP ハンドラをまとめる。
 type PostHandler struct {
 	createUsecase CreatePostExecutor
 }
@@ -43,7 +42,9 @@ type CreatePostResponse struct {
 	PostID string `json:"post_id"`
 }
 
-// CreatePost はリクエストを受けてユースケースを実行する。
+/**
+ * POST /posts のリクエストを検証し、ユースケースへ委譲して結果を返す。
+ */
 func (h *PostHandler) CreatePost(c *gin.Context) {
 	var req CreatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,6 +68,9 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	c.JSON(http.StatusCreated, CreatePostResponse{PostID: out.DarkPostID})
 }
 
+/**
+ * ユースケースからのエラーを HTTP ステータスとメッセージへ写し替える。
+ */
 func (h *PostHandler) handleError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, postusecase.ErrNilInput):
