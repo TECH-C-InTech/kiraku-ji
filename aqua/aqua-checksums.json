@@ -11,8 +11,18 @@
       "algorithm": "sha256"
     },
     {
+      "id": "github_release/github.com/terraform-linters/tflint/v0.60.0/tflint_linux_arm64.zip",
+      "checksum": "8F01D273E58F44F6ED10E198FA1F5D0A8080B01869DE64658528275E943EF47A",
+      "algorithm": "sha256"
+    },
+    {
       "id": "http/releases.hashicorp.com/terraform/1.10.4/terraform_1.10.4_linux_arm64.zip",
       "checksum": "3C554A8B9BA2B2B03CDFE2B7CFA9B3CC40E98AF99E4A52E21E365B97AF2B3669",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/releases.hashicorp.com/terraform/1.14.3/terraform_1.14.3_linux_arm64.zip",
+      "checksum": "FB5B004070E5E438214A74DDCA321C22246F799E5CBE1EE9DF582528E953F8CC",
       "algorithm": "sha256"
     },
     {
