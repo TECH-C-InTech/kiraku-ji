@@ -27,24 +27,41 @@ type WorkerContainer struct {
 	Formatter            llm.Formatter
 	FormatPendingUsecase *worker.FormatPendingUsecase
 	closeFormatter       func() error
+	closeInfra           func() error
+}
+
+var formatterCtor = gemini.NewFormatter
+
+var formatterFactory = func(ctx context.Context, apiKey, model string) (llm.Formatter, func() error, error) {
+	formatter, err := formatterCtor(ctx, apiKey, model)
+	if err != nil {
+		return nil, nil, err
+	}
+	return formatter, formatter.Close, nil
+}
+var postRepositoryFactory = newPostRepository
+var seedPostsFunc = seedPosts
+var infraFactory = NewInfra
+var samplePostFactory = func() (*post.Post, error) {
+	return post.New("post-local", "審査待ちの投稿です")
 }
 
 /**
  * ワーカー稼働に必要なインフラ、LLM、キューなどを整えて返す。
  */
 func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
-	infra, err := NewInfra(ctx)
+	infra, err := infraFactory(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init infra: %w", err)
 	}
 
-	postRepo, seedLocal, err := newPostRepository(ctx, infra)
+	postRepo, seedLocal, err := postRepositoryFactory(ctx, infra)
 	if err != nil {
 		return nil, err
 	}
 	var initialID post.DarkPostID
 	if seedLocal {
-		initialID, err = seedPosts(ctx, postRepo)
+		initialID, err = seedPostsFunc(ctx, postRepo)
 		if err != nil {
 			return nil, fmt.Errorf("seed posts: %w", err)
 		}
@@ -56,7 +73,7 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load gemini config: %w", err)
 	}
-	formatter, err := gemini.NewFormatter(ctx, geminiCfg.APIKey, geminiCfg.Model)
+	formatter, closeFormatter, err := formatterFactory(ctx, geminiCfg.APIKey, geminiCfg.Model)
 	if err != nil {
 		return nil, fmt.Errorf("init formatter: %w", err)
 	}
@@ -70,14 +87,18 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 
 	usecase := worker.NewFormatPendingUsecase(postRepo, formatter, jobQueue)
 
-	return &WorkerContainer{
+	container := &WorkerContainer{
 		Infra:                infra,
 		PostRepo:             postRepo,
 		JobQueue:             jobQueue,
 		Formatter:            formatter,
 		FormatPendingUsecase: usecase,
-		closeFormatter:       formatter.Close,
-	}, nil
+		closeFormatter:       closeFormatter,
+	}
+	if infra != nil {
+		container.closeInfra = infra.Close
+	}
+	return container, nil
 }
 
 /**
@@ -88,38 +109,18 @@ func (c *WorkerContainer) Close() error {
 		return nil
 	}
 	var retErr error
-	if c.closeFormatter != nil {
-		if err := c.closeFormatter(); err != nil {
-			log.Printf("formatter close error: %v", err)
-			if retErr == nil {
-				retErr = err
-			}
-		}
-	}
+	retErr = mergeCloseError(retErr, "formatter", c.closeFormatter)
 	if c.JobQueue != nil {
-		if err := c.JobQueue.Close(); err != nil {
-			log.Printf("job queue close error: %v", err)
-			if retErr == nil {
-				retErr = err
-			}
-		}
+		retErr = mergeCloseError(retErr, "job queue", c.JobQueue.Close)
 	}
-	if c.Infra != nil {
-		if err := c.Infra.Close(); err != nil {
-			log.Printf("infra close error: %v", err)
-			if retErr == nil {
-				retErr = err
-			}
-		}
-	}
-	return retErr
+	return mergeCloseError(retErr, "infra", c.closeInfra)
 }
 
 /**
  * メモリリポジトリへ見本投稿を入れ、整形対象 ID を返す。
  */
 func seedPosts(ctx context.Context, repo repository.PostRepository) (post.DarkPostID, error) {
-	sample, err := post.New("post-local", "審査待ちの投稿です")
+	sample, err := samplePostFactory()
 	if err != nil {
 		return "", err
 	}
@@ -129,6 +130,19 @@ func seedPosts(ctx context.Context, repo repository.PostRepository) (post.DarkPo
 	return sample.ID(), nil
 }
 
+func mergeCloseError(current error, label string, fn func() error) error {
+	if fn == nil {
+		return current
+	}
+	if err := fn(); err != nil {
+		log.Printf("%s close error: %v", label, err)
+		if current == nil {
+			return err
+		}
+	}
+	return current
+}
+
 /**
  * 環境変数 WORKER_POST_REPOSITORY に応じてメモリ or Firestore のリポジトリを返す。
  */
@@ -136,11 +150,7 @@ func newPostRepository(ctx context.Context, infra *Infra) (repository.PostReposi
 	kind := strings.TrimSpace(os.Getenv("WORKER_POST_REPOSITORY"))
 	switch strings.ToLower(kind) {
 	case "firestore":
-		client := infra.Firestore()
-		if client == nil {
-			return nil, false, fmt.Errorf("firestore post repository requested but firestore client is unavailable")
-		}
-		repo, err := repoFirestore.NewPostRepository(client)
+		repo, err := repoFirestore.NewPostRepository(infra.Firestore())
 		if err != nil {
 			return nil, false, fmt.Errorf("new firestore post repository: %w", err)
 		}
