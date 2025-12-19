@@ -18,7 +18,10 @@ type GeminiConfig struct {
 	Model  string
 }
 
-// 環境変数から読み込んでGemni連携に使用
+/**
+ * 環境変数から読み込んでGemni連携に使用 
+ */
+
 func LoadGeminiConfigFromEnv() (*GeminiConfig, error) {
 	key := strings.TrimSpace(os.Getenv(envGeminiAPIKey))
 	if key == "" {
