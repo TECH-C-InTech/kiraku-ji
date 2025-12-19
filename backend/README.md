@@ -226,6 +226,17 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 3. `FIRESTORE_EMULATOR_HOST` は未設定（実サービス接続）。
 4. `go run ./cmd/api` もしくはビルド済みバイナリを実行。
 
+## ワーカー起動方法
+
+Gemini API キーなどを `.env`（`backend/.env.example` を参照）に設定した上で、以下のコマンドで整形ワーカーを起動できます。
+
+```
+cd backend
+go run ./cmd/worker
+```
+
+整形キューを監視し、取得した投稿を Gemini で整形して公開準備へ進めます。
+
 ---
 
 ## エラーコメント規約
