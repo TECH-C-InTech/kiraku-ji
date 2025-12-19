@@ -39,7 +39,6 @@ func TestFirestoreJobQueue_EnqueueAndDequeue(t *testing.T) {
 	}
 }
 
-
 func TestFirestoreJobQueue_DuplicateEnqueueReturnsError(t *testing.T) {
 	client := newTestFirestoreClient(t)
 	truncateCollection(t, client, formatJobsCollection)
@@ -115,6 +114,25 @@ func TestFirestoreJobQueue_CloseStopsOperations(t *testing.T) {
 	_, err = queue.DequeueFormat(context.Background())
 	if !errors.Is(err, portqueue.ErrQueueClosed) {
 		t.Fatalf("expected ErrQueueClosed on dequeue, got %v", err)
+	}
+}
+
+// Dequeue 中にコンテキストが閉じた場合に適切なエラーへ変換されるかを確認する
+func TestFirestoreJobQueue_DequeueContextCanceled(t *testing.T) {
+	client := newTestFirestoreClient(t)
+	truncateCollection(t, client, formatJobsCollection)
+
+	queue, err := NewFirestoreJobQueue(client)
+	if err != nil {
+		t.Fatalf("NewFirestoreJobQueue: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	_, err = queue.DequeueFormat(ctx)
+	if err == nil || !errors.Is(err, portqueue.ErrContextClosed) {
+		t.Fatalf("expected ErrContextClosed, got %v", err)
 	}
 }
 
