@@ -132,6 +132,17 @@ func TestFormatPendingUsecase_PostNotFound(t *testing.T) {
 	}
 }
 
+func TestFormatPendingUsecase_GetGenericError(t *testing.T) {
+	repo := newStubPostRepository(nil)
+	repo.getErr = errors.New("get failed")
+	usecase := NewFormatPendingUsecase(repo, &stubFormatter{}, stubJobQueue{})
+
+	err := usecase.Execute(context.Background(), "post-1")
+	if !errors.Is(err, repo.getErr) {
+		t.Fatalf("expected generic get error, got %v", err)
+	}
+}
+
 func TestFormatPendingUsecase_FormatterUnavailable(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := newStubPostRepository(p)
