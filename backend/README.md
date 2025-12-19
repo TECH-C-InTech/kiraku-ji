@@ -210,6 +210,7 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `OPENAI_API_KEY` | OpenAI formatter を使用する際の API キー |
 | `OPENAI_MODEL` | 利用する OpenAI モデル名（未設定時は `gpt-4o-mini`） |
 | `OPENAI_BASE_URL` | OpenAI 互換エンドポイントを使う場合の Base URL（通常は空で OK） |
+| `LLM_PROVIDER` | `openai` / `gemini` を指定して使用する LLM を切り替え（未設定時は `openai`） |
 
 `GOOGLE_CLOUD_PROJECT` が未設定の場合は Firestore クライアントは初期化されません（メモリ実装のみで動作）。
 
