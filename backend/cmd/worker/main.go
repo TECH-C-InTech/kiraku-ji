@@ -23,7 +23,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize worker: %v", err)
 	}
-	defer container.Close()
+	defer func() {
+		if cerr := container.Close(); cerr != nil {
+			log.Printf("worker shutdown error: %v", cerr)
+		}
+	}()
 
 	log.Println("worker started (pending format)")
 	runLoop(ctx, container)
