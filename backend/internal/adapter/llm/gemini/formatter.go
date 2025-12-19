@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"unicode/utf8"
 
@@ -102,6 +103,8 @@ func (f *Formatter) Format(ctx context.Context, req *llm.FormatRequest) (*llm.Fo
 		return nil, err
 	}
 
+	log.Printf("[gemini] formatted dark_post_id=%s text=%q", req.DarkPostID, text)
+
 	return &llm.FormatResult{
 		DarkPostID:       req.DarkPostID,
 		FormattedContent: drawdomain.FormattedContent(text),
@@ -166,12 +169,15 @@ func resolveModelName(name string) string {
  */
 func buildPrompt(content string) string {
 	template := `
-あなたは匿名の悩み相談を受け取り、投稿者を肯定しながら穏やかで前向きな 200 字以内の日本語メッセージに整形する編集者です。
-- です・ます調で丁寧に書く
-- URL や顔文字、箇条書きは禁止
-- 余計な前置きは書かず、すぐ本文を書き始める
+あなたは他人の闇投稿を受け取り、別の人が引く「闇おみくじ」に変換する占い師です。
+- Aさんの闇を元に、Aさんのことを知らないBさん向けの占い結果を 120〜150 文字でまとめる
+- 冒頭を「今日の闇みくじ:」で始め、です・ます調で未来の兆しを示す
+- 少なくとも 2 文以上で構成し、B さんのこれからを占う
+- URL、顔文字、箇条書き、具体的な固有名詞は禁止
+- Aさんへの直接メッセージにはせず、あくまで B さんが引くおみくじとして仕上げる
+- 余計な前置きは不要。すぐにお告げを書き始め、最後まで肯定的な余韻で締める
 
-原文:
+元になった闇投稿:
 %s
 `
 	return fmt.Sprintf(strings.TrimSpace(template), strings.TrimSpace(content))
