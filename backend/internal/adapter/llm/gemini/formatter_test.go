@@ -187,8 +187,8 @@ func TestFormatter_FormatNilContext(t *testing.T) {
 	}
 	f := &Formatter{generator: gen}
 	req := &llm.FormatRequest{DarkPostID: "id", DarkContent: "content"}
-	//nolint:staticcheck // nil context を許容する挙動を確認するために明示的に nil を渡す
-	if _, err := f.Format(nil, req); err != nil {
+	var nilCtx context.Context
+	if _, err := f.Format(nilCtx, req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -279,8 +279,8 @@ func TestNewFormatter_NilContext(t *testing.T) {
 		return &genai.Client{}, nil
 	}
 
-	//nolint:staticcheck // nil context を許容する挙動を確認するために明示的に nil を渡す
-	if _, err := NewFormatter(nil, "key", ""); err != nil {
+	var nilCtx context.Context
+	if _, err := NewFormatter(nilCtx, "key", ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
