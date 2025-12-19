@@ -226,6 +226,26 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 3. `FIRESTORE_EMULATOR_HOST` は未設定（実サービス接続）。
 4. `go run ./cmd/api` もしくはビルド済みバイナリを実行。
 
+### コレクションスキーマ
+
+| コレクション | 主キー | フィールド |
+| --- | --- | --- |
+| `posts/{post_id}` | `post_id` | `content` (string), `status` (`pending`/`ready`), `created_at`, `updated_at` |
+| `draws/{post_id}` | `post_id` (Post と同じ ID) | `result` (string), `status` (`pending`/`verified`/`rejected`), `created_at` |
+
+### 初期データ投入（シード）
+
+`cmd/seed` が Firestore に posts/draws のサンプルデータを投入します。Verified な draw を含む状態が一度で作成されるため、API を Firestore に切り替えた後でもすぐに挙動を確認できます。
+
+```
+cd backend
+export GOOGLE_CLOUD_PROJECT=your-project
+# Firestore Emulator を使う場合は FIRESTORE_EMULATOR_HOST も設定
+go run ./cmd/seed
+```
+
+エミュレータ利用時は `gcloud beta emulators firestore start --host-port=localhost:8080` を別ターミナルで起動してから実行してください。
+
 ---
 
 ## エラーコメント規約
