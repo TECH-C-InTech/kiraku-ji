@@ -7,12 +7,14 @@ import (
 	"os"
 
 	"backend/internal/adapter/http/handler"
+	queueMemory "backend/internal/adapter/queue/memory"
 	firestoreadapter "backend/internal/adapter/repository/firestore"
-	"backend/internal/adapter/repository/memory"
+	memoryrepo "backend/internal/adapter/repository/memory"
 	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
 	"backend/internal/port/repository"
 	drawusecase "backend/internal/usecase/draw"
+	postusecase "backend/internal/usecase/post"
 )
 
 // Container は API で使用する依存を保持する。
@@ -20,6 +22,8 @@ type Container struct {
 	Infra              *Infra
 	DrawFortuneUsecase *drawusecase.FortuneUsecase
 	DrawHandler        *handler.DrawHandler
+	CreatePostUsecase  *postusecase.CreatePostUsecase
+	PostHandler        *handler.PostHandler
 }
 
 // NewContainer は依存を初期化して返す。
@@ -37,10 +41,17 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	usecase := drawusecase.NewFortuneUsecase(repo)
 	drawHandler := handler.NewDrawHandler(usecase)
 
+	postRepo := memoryrepo.NewInMemoryPostRepository()
+	jobQueue := queueMemory.NewInMemoryJobQueue(10)
+	createPostUsecase := postusecase.NewCreatePostUsecase(postRepo, jobQueue)
+	postHandler := handler.NewPostHandler(createPostUsecase)
+
 	return &Container{
 		Infra:              infra,
 		DrawFortuneUsecase: usecase,
 		DrawHandler:        drawHandler,
+		CreatePostUsecase:  createPostUsecase,
+		PostHandler:        postHandler,
 	}, nil
 }
 
@@ -62,7 +73,7 @@ func provideDrawRepository(ctx context.Context, infra *Infra) (repository.DrawRe
 		return newFirestoreDrawRepository(infra)
 	}
 
-	repo := memory.NewInMemoryDrawRepository()
+	repo := memoryrepo.NewInMemoryDrawRepository()
 	if err := seedDraws(ctx, repo, mode); err != nil {
 		return nil, err
 	}

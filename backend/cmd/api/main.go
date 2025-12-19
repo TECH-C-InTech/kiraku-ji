@@ -20,7 +20,7 @@ func main() {
 		}
 	}()
 
-	router := drawhandler.NewRouter(container.DrawHandler)
+	router := drawhandler.NewRouter(container.DrawHandler, container.PostHandler)
 
 	if err := router.Run(); err != nil {
 		log.Fatalf("failed to run server: %v", err)

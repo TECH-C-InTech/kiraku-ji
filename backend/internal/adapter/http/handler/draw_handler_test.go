@@ -22,7 +22,7 @@ func TestDrawHandler_GetRandomDraw(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		d := newVerifiedDraw(t, "post-success", "fortunes await")
 		handler := NewDrawHandler(&stubFortuneUsecase{draw: d})
-		router := NewRouter(handler)
+		router := NewRouter(handler, &PostHandler{})
 
 		rec, body := performRequest(router)
 
@@ -46,7 +46,7 @@ func TestDrawHandler_GetRandomDraw(t *testing.T) {
 
 	t.Run("draws depleted", func(t *testing.T) {
 		handler := NewDrawHandler(&stubFortuneUsecase{err: drawdomain.ErrEmptyResult})
-		router := NewRouter(handler)
+		router := NewRouter(handler, &PostHandler{})
 
 		rec, body := performRequest(router)
 
@@ -64,7 +64,7 @@ func TestDrawHandler_GetRandomDraw(t *testing.T) {
 
 	t.Run("internal error", func(t *testing.T) {
 		handler := NewDrawHandler(&stubFortuneUsecase{err: errors.New("boom")})
-		router := NewRouter(handler)
+		router := NewRouter(handler, &PostHandler{})
 
 		rec, body := performRequest(router)
 
