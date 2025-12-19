@@ -23,7 +23,7 @@ func TestNewWorkerContainer_MemorySeedsJob(t *testing.T) {
 
 	stub := &stubFormatter{}
 	origFactory := formatterFactory
-	formatterFactory = func(ctx context.Context, apiKey, model string) (llm.Formatter, func() error, error) {
+	formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, error) {
 		return stub, stub.Close, nil
 	}
 	defer func() { formatterFactory = origFactory }()
@@ -57,9 +57,12 @@ func TestFormatterFactory_UsesCtor(t *testing.T) {
 	}
 	defer func() { formatterCtor = origCtor }()
 
-	f, closer, err := formatterFactory(context.Background(), "key", "model")
+	t.Setenv("GEMINI_API_KEY", "key")
+	t.Setenv("GEMINI_MODEL", "model")
+
+	f, closer, err := newGeminiFormatter(context.Background())
 	if err != nil {
-		t.Fatalf("formatterFactory returned error: %v", err)
+		t.Fatalf("newGeminiFormatter returned error: %v", err)
 	}
 	if f != stub {
 		t.Fatalf("expected stub formatter")
@@ -100,7 +103,7 @@ func TestNewWorkerContainer_FormatterFactoryError(t *testing.T) {
 	t.Setenv("GEMINI_API_KEY", "dummy")
 	t.Setenv("GEMINI_MODEL", "dummy")
 	origFactory := formatterFactory
-	formatterFactory = func(ctx context.Context, apiKey, model string) (llm.Formatter, func() error, error) {
+	formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, error) {
 		return nil, nil, errors.New("formatter error")
 	}
 	defer func() { formatterFactory = origFactory }()
@@ -137,7 +140,7 @@ func TestNewWorkerContainer_SeedEnqueueError(t *testing.T) {
 	t.Setenv("GEMINI_MODEL", "dummy")
 	stub := &stubFormatter{}
 	origFactory := formatterFactory
-	formatterFactory = func(ctx context.Context, apiKey, model string) (llm.Formatter, func() error, error) {
+	formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, error) {
 		return stub, stub.Close, nil
 	}
 	defer func() { formatterFactory = origFactory }()

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"backend/internal/adapter/llm/gemini"
+	openaiFormatter "backend/internal/adapter/llm/openai"
 	queueMemory "backend/internal/adapter/queue/memory"
 	repoFirestore "backend/internal/adapter/repository/firestore"
 	repoMemory "backend/internal/adapter/repository/memory"
@@ -31,13 +32,23 @@ type WorkerContainer struct {
 }
 
 var formatterCtor = gemini.NewFormatter
-
-var formatterFactory = func(ctx context.Context, apiKey, model string) (llm.Formatter, func() error, error) {
-	formatter, err := formatterCtor(ctx, apiKey, model)
+var openaiFormatterFactory = func(apiKey, model, baseURL string) (llm.Formatter, func() error, error) {
+	formatter, err := openaiFormatter.NewFormatter(apiKey, model, baseURL)
 	if err != nil {
 		return nil, nil, err
 	}
 	return formatter, formatter.Close, nil
+}
+
+var formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, error) {
+	switch config.LoadLLMProvider() {
+	case "gemini":
+		return newGeminiFormatter(ctx)
+	case "openai":
+		fallthrough
+	default:
+		return newOpenAIFormatter()
+	}
 }
 var postRepositoryFactory = newPostRepository
 var seedPostsFunc = seedPosts
@@ -69,11 +80,7 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 
 	jobQueue := queueMemory.NewInMemoryJobQueue(10)
 
-	geminiCfg, err := config.LoadGeminiConfigFromEnv()
-	if err != nil {
-		return nil, fmt.Errorf("load gemini config: %w", err)
-	}
-	formatter, closeFormatter, err := formatterFactory(ctx, geminiCfg.APIKey, geminiCfg.Model)
+	formatter, closeFormatter, err := formatterFactory(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init formatter: %w", err)
 	}
@@ -141,6 +148,30 @@ func mergeCloseError(current error, label string, fn func() error) error {
 		}
 	}
 	return current
+}
+
+func newGeminiFormatter(ctx context.Context) (llm.Formatter, func() error, error) {
+	cfg, err := config.LoadGeminiConfigFromEnv()
+	if err != nil {
+		return nil, nil, fmt.Errorf("load gemini config: %w", err)
+	}
+	formatter, err := formatterCtor(ctx, cfg.APIKey, cfg.Model)
+	if err != nil {
+		return nil, nil, fmt.Errorf("new gemini formatter: %w", err)
+	}
+	return formatter, formatter.Close, nil
+}
+
+func newOpenAIFormatter() (llm.Formatter, func() error, error) {
+	cfg, err := config.LoadOpenAIConfigFromEnv()
+	if err != nil {
+		return nil, nil, fmt.Errorf("load openai config: %w", err)
+	}
+	formatter, closeFn, err := openaiFormatterFactory(cfg.APIKey, cfg.Model, cfg.BaseURL)
+	if err != nil {
+		return nil, nil, fmt.Errorf("new openai formatter: %w", err)
+	}
+	return formatter, closeFn, nil
 }
 
 /**
