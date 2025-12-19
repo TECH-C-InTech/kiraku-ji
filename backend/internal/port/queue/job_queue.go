@@ -9,6 +9,7 @@ import (
 
 var (
 	ErrJobAlreadyScheduled = errors.New("queue: 同一 ID のジョブがすでに存在します")
+	ErrQueueClosed         = errors.New("queue: ジョブキューが停止しました")
 )
 
 /**
@@ -17,4 +18,5 @@ var (
  */
 type JobQueue interface {
 	EnqueueFormat(ctx context.Context, postID post.DarkPostID) error
+	DequeueFormat(ctx context.Context) (post.DarkPostID, error)
 }
