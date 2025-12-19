@@ -204,6 +204,7 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `GOOGLE_CLOUD_PROJECT` | Firestore を利用する GCP プロジェクト ID（必須） |
 | `GOOGLE_APPLICATION_CREDENTIALS` | 本番・Staging などで用いるサービスアカウント JSON のパス（エミュレータ利用時は不要） |
 | `FIRESTORE_EMULATOR_HOST` | Firestore Emulator を利用する場合のホスト名（例: `localhost:8080`） |
+| `WORKER_POST_REPOSITORY` | `firestore` を指定するとワーカーが Firestore PostRepository を利用（未設定時はメモリ実装） |
 
 `GOOGLE_CLOUD_PROJECT` が未設定の場合は Firestore クライアントは初期化されません（メモリ実装のみで動作）。
 
@@ -245,6 +246,18 @@ go run ./cmd/seed
 ```
 
 エミュレータ利用時は `gcloud beta emulators firestore start --host-port=localhost:8080` を別ターミナルで起動してから実行してください。
+
+## ワーカー起動方法
+
+Gemini API キーなどを `.env`（`backend/.env.example` を参照）に設定した上で、以下のコマンドで整形ワーカーを起動できます。
+
+```
+cd backend
+go run ./cmd/worker
+```
+
+整形キューを監視し、取得した投稿を Gemini で整形して公開準備へ進めます。
+FireStore を接続する場合は `WORKER_POST_REPOSITORY=firestore` を設定し、Firestore クライアントが初期化されている必要があります。
 
 ---
 

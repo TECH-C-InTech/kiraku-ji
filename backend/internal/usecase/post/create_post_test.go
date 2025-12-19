@@ -225,3 +225,11 @@ func (s *stubJobQueue) EnqueueFormat(ctx context.Context, id post.DarkPostID) er
 	}
 	return nil
 }
+
+func (s *stubJobQueue) DequeueFormat(ctx context.Context) (post.DarkPostID, error) {
+	return "", queue.ErrQueueClosed
+}
+
+func (s *stubJobQueue) Close() error {
+	return nil
+}
