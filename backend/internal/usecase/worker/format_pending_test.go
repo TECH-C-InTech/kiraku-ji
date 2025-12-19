@@ -273,19 +273,10 @@ func TestFormatPendingUsecase_ValidationNotVerified(t *testing.T) {
 }
 
 func TestFormatPendingUsecase_NilContext(t *testing.T) {
-	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
-	repo := newStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &stubFormatter{
-		formatResult: &llm.FormatResult{DarkPostID: p.ID()},
-		validateResult: &llm.FormatResult{
-			DarkPostID:       p.ID(),
-			Status:           drawdomain.StatusVerified,
-			FormattedContent: "formatted",
-		},
-	}, stubJobQueue{})
+	usecase := NewFormatPendingUsecase(newStubPostRepository(nil), &stubFormatter{}, stubJobQueue{})
 
 	var nilCtx context.Context
-	if err := usecase.Execute(nilCtx, "post-1"); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := usecase.Execute(nilCtx, "post-1"); !errors.Is(err, ErrNilContext) {
+		t.Fatalf("expected ErrNilContext, got %v", err)
 	}
 }

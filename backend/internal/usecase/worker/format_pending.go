@@ -18,6 +18,7 @@ var (
 	ErrFormatterUnavailable = errors.New("format_pending: 整形サービスに接続できません")
 	ErrContentRejected      = errors.New("format_pending: 投稿内容が拒否されました")
 	ErrNilUsecase           = errors.New("format_pending: ユースケースが初期化されていません")
+	ErrNilContext           = errors.New("format_pending: コンテキストが指定されていません")
 )
 
 // 整形待ち投稿の整形から公開準備までを担う。
@@ -47,7 +48,7 @@ func (u *FormatPendingUsecase) Execute(ctx context.Context, postID string) error
 		return ErrNilUsecase
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return ErrNilContext
 	}
 	if postID == "" {
 		return ErrEmptyPostID
