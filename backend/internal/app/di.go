@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"backend/internal/adapter/http/handler"
+	firestoreadapter "backend/internal/adapter/repository/firestore"
 	"backend/internal/adapter/repository/memory"
 	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
@@ -28,7 +29,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		return nil, fmt.Errorf("init infra: %w", err)
 	}
 
-	repo, err := provideDrawRepository()
+	repo, err := provideDrawRepository(ctx, infra)
 	if err != nil {
 		return nil, fmt.Errorf("provide draw repository: %w", err)
 	}
@@ -51,20 +52,33 @@ func (c *Container) Close() error {
 	return c.Infra.Close()
 }
 
-func provideDrawRepository() (repository.DrawRepository, error) {
+func provideDrawRepository(ctx context.Context, infra *Infra) (repository.DrawRepository, error) {
 	mode := os.Getenv("DRAW_REPOSITORY_MODE")
 	if mode == "error" {
 		return newFailingDrawRepository(), nil
 	}
 
+	if mode == "firestore" {
+		return newFirestoreDrawRepository(infra)
+	}
+
 	repo := memory.NewInMemoryDrawRepository()
-	if err := seedDraws(repo, mode); err != nil {
+	if err := seedDraws(ctx, repo, mode); err != nil {
 		return nil, err
 	}
 	return repo, nil
 }
 
-func seedDraws(repo repository.DrawRepository, mode string) error {
+func newFirestoreDrawRepository(infra *Infra) (repository.DrawRepository, error) {
+	client := infra.Firestore()
+	if client == nil {
+		return nil, errors.New("firestore draw repository requested but firestore client is not initialized")
+	}
+	// Firestore 実装を初期化し、アダプター層経由で返す。
+	return firestoreadapter.NewDrawRepository(client)
+}
+
+func seedDraws(ctx context.Context, repo repository.DrawRepository, mode string) error {
 	samples := []struct {
 		id      string
 		content string
@@ -88,7 +102,7 @@ func seedDraws(repo repository.DrawRepository, mode string) error {
 		if sample.ready {
 			draw.MarkVerified()
 		}
-		if err := repo.Create(context.Background(), draw); err != nil && err != repository.ErrDrawAlreadyExists {
+		if err := repo.Create(ctx, draw); err != nil && err != repository.ErrDrawAlreadyExists {
 			return err
 		}
 	}

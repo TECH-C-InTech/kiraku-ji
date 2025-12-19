@@ -79,7 +79,11 @@ func newFirestoreClient(ctx context.Context, cfg *FirestoreConfig) (*firestore.C
 
 	// エミュレータ利用時は認証不要なので Credentials は読み込まない。
 	if cfg.CredentialsFile != "" && cfg.EmulatorHost == "" {
-		opts = append(opts, option.WithCredentialsFile(cfg.CredentialsFile))
+		creds, err := os.ReadFile(cfg.CredentialsFile)
+		if err != nil {
+			return nil, fmt.Errorf("read credentials file: %w", err)
+		}
+		opts = append(opts, option.WithAuthCredentialsJSON(option.ServiceAccount, creds))
 	}
 
 	client, err := firestore.NewClient(ctx, cfg.ProjectID, opts...)
