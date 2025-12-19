@@ -11,6 +11,8 @@ var (
 	ErrEmptyResult = errors.New("draw: result is empty")
 	// ErrEmptyPostID は Post ID が空の場合に返される。
 	ErrEmptyPostID = errors.New("draw: post id is empty")
+	// ErrInvalidStatus は不正な状態を復元しようとした際に返される。
+	ErrInvalidStatus = errors.New("draw: invalid status")
 	// ErrNilPost は nil の Post を受け取った際に返される。
 	ErrNilPost = errors.New("draw: nil post supplied")
 	// ErrPostNotReady は ready でない Post から Draw を生成しようとした際に返される。
@@ -52,6 +54,25 @@ func New(postID post.DarkPostID, result FormattedContent) (*Draw, error) {
 	}, nil
 }
 
+// Restore は既存の Draw を状態付きで復元する。
+func Restore(postID post.DarkPostID, result FormattedContent, status Status) (*Draw, error) {
+	if postID == "" {
+		return nil, ErrEmptyPostID
+	}
+	if result == "" {
+		return nil, ErrEmptyResult
+	}
+	if !status.isValid() {
+		return nil, ErrInvalidStatus
+	}
+
+	return &Draw{
+		postID: postID,
+		result: result,
+		status: status,
+	}, nil
+}
+
 // FromPost は ready な Post から Draw を生成する。
 func FromPost(p *post.Post, result FormattedContent) (*Draw, error) {
 	if p == nil {
@@ -82,4 +103,8 @@ func (d *Draw) Status() Status {
 // MarkVerified は結果を検証済み状態へ遷移させる。
 func (d *Draw) MarkVerified() {
 	d.status = StatusVerified
+}
+
+func (s Status) isValid() bool {
+	return s == StatusPending || s == StatusVerified || s == StatusRejected
 }
