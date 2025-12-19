@@ -187,6 +187,7 @@ func TestFormatter_FormatNilContext(t *testing.T) {
 	}
 	f := &Formatter{generator: gen}
 	req := &llm.FormatRequest{DarkPostID: "id", DarkContent: "content"}
+	//nolint:staticcheck // nil context を許容する挙動を確認するために明示的に nil を渡す
 	if _, err := f.Format(nil, req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -278,6 +279,7 @@ func TestNewFormatter_NilContext(t *testing.T) {
 		return &genai.Client{}, nil
 	}
 
+	//nolint:staticcheck // nil context を許容する挙動を確認するために明示的に nil を渡す
 	if _, err := NewFormatter(nil, "key", ""); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -313,13 +315,13 @@ func TestConfigureModel(t *testing.T) {
 	if !ok || gm == nil {
 		t.Fatalf("expected generative model")
 	}
-	if gm.GenerationConfig.CandidateCount == nil || *gm.GenerationConfig.CandidateCount != 1 {
+	if gm.CandidateCount == nil || *gm.CandidateCount != 1 {
 		t.Fatalf("candidate count not set")
 	}
-	if gm.GenerationConfig.MaxOutputTokens == nil || *gm.GenerationConfig.MaxOutputTokens != 512 {
+	if gm.MaxOutputTokens == nil || *gm.MaxOutputTokens != 512 {
 		t.Fatalf("max output tokens not set")
 	}
-	if gm.GenerationConfig.Temperature == nil || *gm.GenerationConfig.Temperature != 0.4 {
+	if gm.Temperature == nil || *gm.Temperature != 0.4 {
 		t.Fatalf("temperature not set")
 	}
 }

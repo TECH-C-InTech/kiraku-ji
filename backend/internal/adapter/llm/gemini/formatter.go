@@ -23,19 +23,22 @@ var rejectionKeywords = []string{"kill", "suicide", "die"}
 
 var newGeminiClient = genai.NewClient
 
-// contentGenerator は gemini.GenerativeModel をテストしやすい形に抽象化したもの。
+// Gemini の生成モデルをテスト用に差し替えやすくしたインターフェース。
 type contentGenerator interface {
 	GenerateContent(ctx context.Context, parts ...genai.Part) (*genai.GenerateContentResponse, error)
 }
 
-// Formatter は Gemini モデルを利用した整形ロジックを提供する。
+// Gemini を用いた整形処理と検証処理をまとめたもの。
 type Formatter struct {
 	generator contentGenerator
 	closeFn   func() error
 	modelName string
 }
 
-// NewFormatter は API キーとモデル名から Formatter を生成する。
+/**
+ * API キーなどの設定から Gemini への窓口を構築し、整形器を返す。
+ * 必須情報が欠けていたり、接続ができないときはその旨を伝えて終了する。
+ */
 func NewFormatter(ctx context.Context, apiKey, modelName string, extraOpts ...option.ClientOption) (*Formatter, error) {
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey == "" {
@@ -62,7 +65,10 @@ func NewFormatter(ctx context.Context, apiKey, modelName string, extraOpts ...op
 	}, nil
 }
 
-// Close は内部で保持している Gemini クライアントをクローズする。
+/**
+ * 内部で保持している接続を後片付けする。
+ * そもそも接続していない場合は何もせずに戻る。
+ */
 func (f *Formatter) Close() error {
 	if f == nil || f.closeFn == nil {
 		return nil
@@ -70,7 +76,10 @@ func (f *Formatter) Close() error {
 	return f.closeFn()
 }
 
-// Format は闇投稿を Gemini で整形し、pending 状態の結果を返す。
+/**
+ * 闇投稿本文を丁寧な言葉へ整え、検証待ち状態の結果として返す。
+ * 依頼が空だったり応答が壊れている場合は、理由を添えて失敗を知らせる。
+ */
 func (f *Formatter) Format(ctx context.Context, req *llm.FormatRequest) (*llm.FormatResult, error) {
 	if err := validateFormatRequest(req); err != nil {
 		return nil, err
@@ -100,7 +109,10 @@ func (f *Formatter) Format(ctx context.Context, req *llm.FormatRequest) (*llm.Fo
 	}, nil
 }
 
-// Validate は Gemini の整形結果を検証し、公開可能かどうかを判定する。
+/**
+ * 整形結果が投稿規約に沿っているかを再確認し、公開可否を決める。
+ * 禁止語や文字数違反などが見つかったら拒否理由を付けて返す。
+ */
 func (f *Formatter) Validate(ctx context.Context, result *llm.FormatResult) (*llm.FormatResult, error) {
 	if result == nil || result.DarkPostID == "" {
 		return nil, llm.ErrInvalidFormat
@@ -126,6 +138,9 @@ func (f *Formatter) Validate(ctx context.Context, result *llm.FormatResult) (*ll
 	return result, nil
 }
 
+/**
+ * 整形依頼に ID と本文が入っているかを確かめる。
+ */
 func validateFormatRequest(req *llm.FormatRequest) error {
 	if req == nil || req.DarkPostID == "" {
 		return llm.ErrInvalidFormat
@@ -136,6 +151,9 @@ func validateFormatRequest(req *llm.FormatRequest) error {
 	return nil
 }
 
+/**
+ * モデル名の指定が空だった場合、既定の名前へ置き換える。
+ */
 func resolveModelName(name string) string {
 	if strings.TrimSpace(name) == "" {
 		return defaultModelName
@@ -143,6 +161,9 @@ func resolveModelName(name string) string {
 	return name
 }
 
+/**
+ * 整形時の言い回しや禁止事項を明記したガイド文を作り、投稿本文を差し込む。
+ */
 func buildPrompt(content string) string {
 	template := `
 あなたは匿名の悩み相談を受け取り、投稿者を肯定しながら穏やかで前向きな 200 字以内の日本語メッセージに整形する編集者です。
@@ -156,6 +177,10 @@ func buildPrompt(content string) string {
 	return fmt.Sprintf(strings.TrimSpace(template), strings.TrimSpace(content))
 }
 
+/**
+ * Gemini の応答候補から先頭の文章を取り出す。
+ * 何も得られない場合は整形不備として扱う。
+ */
 func extractFirstText(resp *genai.GenerateContentResponse) (string, error) {
 	if resp == nil {
 		return "", llm.ErrInvalidFormat
@@ -179,6 +204,9 @@ func extractFirstText(resp *genai.GenerateContentResponse) (string, error) {
 	return "", llm.ErrInvalidFormat
 }
 
+/**
+ * 文字数・禁止語・URL などの検査を行い、違反が見つかったら拒否理由を返す。
+ */
 func shouldReject(text string) (string, bool) {
 	length := utf8.RuneCountInString(text)
 	if length < minFormattedLength {
@@ -200,6 +228,9 @@ func shouldReject(text string) (string, bool) {
 	return "", false
 }
 
+/**
+ * 候補数・文字数上限・温度などの設定を行い、生成器として扱えるようにする。
+ */
 func configureModel(model *genai.GenerativeModel) contentGenerator {
 	if model == nil {
 		return nil
@@ -210,6 +241,10 @@ func configureModel(model *genai.GenerativeModel) contentGenerator {
 	return model
 }
 
+/**
+ * クライアントが存在する場合だけ後片付け用の関数を返す。
+ * 無い場合は nil を返し、余計な Close を避ける。
+ */
 func makeCloseFn(client *genai.Client) func() error {
 	if client == nil {
 		return nil
