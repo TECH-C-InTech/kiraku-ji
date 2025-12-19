@@ -6,9 +6,12 @@ import (
 
 	drawhandler "backend/internal/adapter/http/handler"
 	"backend/internal/app"
+	"backend/internal/config"
 )
 
 func main() {
+	config.LoadDotEnv()
+
 	ctx := context.Background()
 	container, err := app.NewContainer(ctx)
 	if err != nil {

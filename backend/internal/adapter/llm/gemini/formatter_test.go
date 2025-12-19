@@ -20,6 +20,16 @@ type fakeGenerator struct {
 	parts    []genai.Part
 }
 
+var (
+	fortuneShort         = "今日の闇みくじ: 今は静かに整えます。行動は穏やかに選びます。結末は柔らかく明けます。"
+	fortuneValid         = "今日の闇みくじ: 今は静かに心を整えて周囲の言葉に振り回されず呼吸を整え続け内側の炎を見つめます。行動は小さな成功を丁寧に数えて自分の歩幅で穏やかに進み信頼できる人へ想いを共有します。結末は柔らかな光と応援の声に包まれ新しい扉が確かな手触りで開き胸に抱える願いが現実へ結びます。"
+	fortuneLong          = "今日の闇みくじ: 今は静かに心を整えて周囲の言葉に振り回されず呼吸を整え続け内側の炎を見つめます。行動は小さな成功を丁寧に数えて自分の歩幅で穏やかに進み信頼できる人へ想いを共有し慎重に選択肢を整えます。結末は柔らかな光と応援の声に包まれ新しい扉が確かな手触りで開き胸に抱える願いが現実へ結び幸福な空気が波のように満ちます。"
+	fortuneKeyword       = "今日の闇みくじ: 今は静かに心を整えてkillという衝動を遠ざけ周囲の言葉に振り回されず呼吸を整えます。行動は小さな成功を丁寧に数えて自分の歩幅で穏やかに進み信頼できる人へ想いを共有します。結末は柔らかな光と応援の声に包まれ新しい扉が確かな手触りで開き胸に抱える願いが現実へ結びます。"
+	fortuneURL           = "今日の闇みくじ: 今は静かに心を整えてhttps://example.comの誘惑から距離を置き周囲の言葉に振り回されず呼吸を整えます。行動は小さな成功を丁寧に数えて穏やかに進み信頼できる人へ想いを共有します。結末は柔らかな光と応援の声に包まれ新しい扉が確かな手触りで開き願いが現実へ結びます。"
+	fortuneMissingPrefix = "今は静かに心を整えて周囲の言葉に振り回されず呼吸を整え続け内側の炎を見つめます。行動は小さな成功を丁寧に数えて自分の歩幅で穏やかに進み信頼できる人へ想いを共有します。結末は柔らかな光と応援の声に包まれ新しい扉が確かな手触りで開き胸に抱える願いが現実へ結びます。"
+	fortuneTwoSentences  = "今日の闇みくじ: 今は静かに心を整えて周囲の言葉に振り回されず呼吸を整え続け内側の炎を見つめ希望を抱きつつ肩の力を抜きます。行動は小さな成功を丁寧に数えて自分の歩幅で穏やかに進み信頼できる人へ想いを共有し守るべき境界を静かに定め前向きな計画を描きます。"
+)
+
 func (f *fakeGenerator) GenerateContent(ctx context.Context, parts ...genai.Part) (*genai.GenerateContentResponse, error) {
 	f.parts = parts
 	if f.err != nil {
@@ -101,7 +111,7 @@ func TestFormatter_ValidateSuccess(t *testing.T) {
 	f := &Formatter{}
 	result := &llm.FormatResult{
 		DarkPostID:       post.DarkPostID("post-verified"),
-		FormattedContent: drawdomain.FormattedContent(strings.Repeat("前向きな文章", 2)),
+		FormattedContent: drawdomain.FormattedContent(fortuneValid),
 	}
 
 	validated, err := f.Validate(context.Background(), result)
@@ -120,7 +130,7 @@ func TestFormatter_ValidateRejectsUnsafeText(t *testing.T) {
 	f := &Formatter{}
 	result := &llm.FormatResult{
 		DarkPostID:       post.DarkPostID("post-reject"),
-		FormattedContent: drawdomain.FormattedContent("This text says I want to kill time http://example.com"),
+		FormattedContent: drawdomain.FormattedContent(fortuneKeyword),
 	}
 
 	validated, err := f.Validate(context.Background(), result)
@@ -144,6 +154,39 @@ func TestFormatter_ValidateEmptyText(t *testing.T) {
 
 	if _, err := f.Validate(context.Background(), result); err == nil || !errors.Is(err, llm.ErrInvalidFormat) {
 		t.Fatalf("expected invalid format error, got %v", err)
+	}
+}
+
+func TestFormatter_ValidateRejectsMissingPrefix(t *testing.T) {
+	f := &Formatter{}
+	result := &llm.FormatResult{
+		DarkPostID:       post.DarkPostID("post-missing-prefix"),
+		FormattedContent: drawdomain.FormattedContent(fortuneMissingPrefix),
+	}
+
+	if _, err := f.Validate(context.Background(), result); err == nil || !errors.Is(err, llm.ErrContentRejected) {
+		t.Fatalf("expected rejection due to missing prefix, got %v", err)
+	}
+}
+
+func TestFormatter_ValidateRejectsSentenceCount(t *testing.T) {
+	f := &Formatter{}
+	result := &llm.FormatResult{
+		DarkPostID:       post.DarkPostID("post-missing-sentence"),
+		FormattedContent: drawdomain.FormattedContent(fortuneTwoSentences),
+	}
+
+	if _, err := f.Validate(context.Background(), result); err == nil || !errors.Is(err, llm.ErrContentRejected) {
+		t.Fatalf("expected rejection due to sentence count, got %v", err)
+	}
+}
+
+func TestFormatter_NormalizeFortuneText(t *testing.T) {
+	raw := "今日の闇みくじ:\r\n 一文目です。\n 二文目です。\n 三文目です。"
+	got := normalizeFortuneText(raw)
+	want := "今日の闇みくじ: 一文目です。 二文目です。 三文目です。"
+	if got != want {
+		t.Fatalf("normalizeFortuneText mismatch\ngot:  %q\nwant: %q", got, want)
 	}
 }
 
@@ -377,19 +420,19 @@ func TestExtractFirstTextErrors(t *testing.T) {
 }
 
 func TestShouldReject(t *testing.T) {
-	if reason, rejected := shouldReject(strings.Repeat("a", minFormattedLength-1)); !rejected || !strings.Contains(reason, "短すぎます") {
+	if reason, rejected := shouldReject(fortuneShort); !rejected || !strings.Contains(reason, "短すぎます") {
 		t.Fatalf("expected rejection for short text")
 	}
-	if reason, rejected := shouldReject(strings.Repeat("b", maxFormattedLength+1)); !rejected || !strings.Contains(reason, "長すぎます") {
+	if reason, rejected := shouldReject(fortuneLong); !rejected || !strings.Contains(reason, "長すぎます") {
 		t.Fatalf("expected rejection for long text")
 	}
-	if reason, rejected := shouldReject("please do not kill anyone"); !rejected || !strings.Contains(reason, "不適切") {
+	if reason, rejected := shouldReject(fortuneKeyword); !rejected || !strings.Contains(reason, "不適切") {
 		t.Fatalf("expected rejection for keyword, got %v", reason)
 	}
-	if reason, rejected := shouldReject("visit https://example.com"); !rejected || !strings.Contains(reason, "URL") {
+	if reason, rejected := shouldReject(fortuneURL); !rejected || !strings.Contains(reason, "URL") {
 		t.Fatalf("expected rejection for url, got %v", reason)
 	}
-	if reason, rejected := shouldReject(strings.Repeat("優しい言葉", 5)); rejected {
+	if reason, rejected := shouldReject(fortuneValid); rejected {
 		t.Fatalf("unexpected rejection: %v", reason)
 	}
 }

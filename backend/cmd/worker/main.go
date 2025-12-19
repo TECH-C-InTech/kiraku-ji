@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"backend/internal/app"
+	"backend/internal/config"
 	"backend/internal/port/queue"
 )
 
@@ -16,6 +17,8 @@ import (
  * 起動時にワーカーの依存を整えて停止指示が来るまでループを回す。
  */
 func main() {
+	config.LoadDotEnv()
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
