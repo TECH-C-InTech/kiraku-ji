@@ -2,7 +2,7 @@
 name: Default
 about: デフォルトのissueテンプレート
 title: ''
-labels: 'low'
+labels: 'priority low'
 assignees: ''
 
 ---
