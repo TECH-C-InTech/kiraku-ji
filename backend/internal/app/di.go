@@ -16,12 +16,18 @@ import (
 
 // Container は API で使用する依存を保持する。
 type Container struct {
+	Infra              *Infra
 	DrawFortuneUsecase *drawusecase.FortuneUsecase
 	DrawHandler        *handler.DrawHandler
 }
 
 // NewContainer は依存を初期化して返す。
-func NewContainer() (*Container, error) {
+func NewContainer(ctx context.Context) (*Container, error) {
+	infra, err := NewInfra(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("init infra: %w", err)
+	}
+
 	repo, err := provideDrawRepository()
 	if err != nil {
 		return nil, fmt.Errorf("provide draw repository: %w", err)
@@ -31,9 +37,18 @@ func NewContainer() (*Container, error) {
 	drawHandler := handler.NewDrawHandler(usecase)
 
 	return &Container{
+		Infra:              infra,
 		DrawFortuneUsecase: usecase,
 		DrawHandler:        drawHandler,
 	}, nil
+}
+
+// Close は保持している外部リソースをクローズする。
+func (c *Container) Close() error {
+	if c == nil || c.Infra == nil {
+		return nil
+	}
+	return c.Infra.Close()
 }
 
 func provideDrawRepository() (repository.DrawRepository, error) {

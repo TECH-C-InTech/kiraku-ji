@@ -193,6 +193,39 @@ curl -i localhost:8080/draws/random
 | `empty` | `DRAW_REPOSITORY_MODE=empty go run ./cmd/api` | Verified が無く `404 Not Found`（`message=no verified draws available`） |
 | `error` | `DRAW_REPOSITORY_MODE=error go run ./cmd/api` | リポジトリ強制エラーで `500 Internal Server Error` |
 
+## Firestore 設定
+
+API / Worker から Firestore を利用する際は、`internal/app` が 1 度だけクライアントを生成し、各コンテナに共有されます。以下の環境変数を設定してください。
+
+### 必須・任意の環境変数
+
+| 変数名 | 役割 |
+| --- | --- |
+| `GOOGLE_CLOUD_PROJECT` | Firestore を利用する GCP プロジェクト ID（必須） |
+| `GOOGLE_APPLICATION_CREDENTIALS` | 本番・Staging などで用いるサービスアカウント JSON のパス（エミュレータ利用時は不要） |
+| `FIRESTORE_EMULATOR_HOST` | Firestore Emulator を利用する場合のホスト名（例: `localhost:8080`） |
+
+`GOOGLE_CLOUD_PROJECT` が未設定の場合は Firestore クライアントは初期化されません（メモリ実装のみで動作）。
+
+### ローカル開発（Firestore Emulator）
+
+1. Firestore Emulator を起動  
+   `gcloud beta emulators firestore start --host-port=localhost:8080`
+2. 別ターミナルで環境変数をエクスポート  
+   ```bash
+   export GOOGLE_CLOUD_PROJECT=dark-fortune-dev
+   export FIRESTORE_EMULATOR_HOST=localhost:8080
+   ```
+3. 必要に応じて API / Worker を起動  
+   `go run ./cmd/api`
+
+### 本番・リモート環境
+
+1. Firestore を利用するプロジェクト ID を `GOOGLE_CLOUD_PROJECT` に設定。
+2. 対象サービスアカウント JSON のパスを `GOOGLE_APPLICATION_CREDENTIALS` に設定。
+3. `FIRESTORE_EMULATOR_HOST` は未設定（実サービス接続）。
+4. `go run ./cmd/api` もしくはビルド済みバイナリを実行。
+
 ---
 
 ## エラーコメント規約
