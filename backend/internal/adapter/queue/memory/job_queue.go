@@ -55,6 +55,7 @@ func (q *InMemoryJobQueue) DequeueFormat(ctx context.Context) (post.DarkPostID, 
 /**
  * ジョブ供給を止めるためチャネルを閉じる。
  */
-func (q *InMemoryJobQueue) Close() {
+func (q *InMemoryJobQueue) Close() error {
 	close(q.ch)
+	return nil
 }

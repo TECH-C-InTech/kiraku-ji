@@ -116,4 +116,11 @@ func (StubJobQueue) DequeueFormat(ctx context.Context) (post.DarkPostID, error) 
 	return "", queue.ErrQueueClosed
 }
 
+/**
+ * 何もしない。
+ */
+func (StubJobQueue) Close() error {
+	return nil
+}
+
 var _ queue.JobQueue = (*StubJobQueue)(nil)

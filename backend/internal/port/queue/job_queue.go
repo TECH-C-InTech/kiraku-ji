@@ -19,4 +19,5 @@ var (
 type JobQueue interface {
 	EnqueueFormat(ctx context.Context, postID post.DarkPostID) error
 	DequeueFormat(ctx context.Context) (post.DarkPostID, error)
+	Close() error
 }

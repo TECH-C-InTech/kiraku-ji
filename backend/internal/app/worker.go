@@ -87,16 +87,32 @@ func (c *WorkerContainer) Close() error {
 	if c == nil {
 		return nil
 	}
+	var retErr error
 	if c.closeFormatter != nil {
-		_ = c.closeFormatter()
+		if err := c.closeFormatter(); err != nil {
+			log.Printf("formatter close error: %v", err)
+			if retErr == nil {
+				retErr = err
+			}
+		}
 	}
-	if q, ok := c.JobQueue.(*queueMemory.InMemoryJobQueue); ok && q != nil {
-		q.Close()
+	if c.JobQueue != nil {
+		if err := c.JobQueue.Close(); err != nil {
+			log.Printf("job queue close error: %v", err)
+			if retErr == nil {
+				retErr = err
+			}
+		}
 	}
 	if c.Infra != nil {
-		return c.Infra.Close()
+		if err := c.Infra.Close(); err != nil {
+			log.Printf("infra close error: %v", err)
+			if retErr == nil {
+				retErr = err
+			}
+		}
 	}
-	return nil
+	return retErr
 }
 
 /**
