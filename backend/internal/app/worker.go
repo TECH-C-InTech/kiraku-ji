@@ -3,9 +3,12 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"backend/internal/adapter/llm/gemini"
 	queueMemory "backend/internal/adapter/queue/memory"
+	repoFirestore "backend/internal/adapter/repository/firestore"
 	repoMemory "backend/internal/adapter/repository/memory"
 	"backend/internal/config"
 	"backend/internal/domain/post"
@@ -34,10 +37,16 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 		return nil, fmt.Errorf("init infra: %w", err)
 	}
 
-	postRepo := repoMemory.NewInMemoryPostRepository()
-	initialID, err := seedPosts(postRepo)
+	postRepo, seedLocal, err := newPostRepository(ctx, infra)
 	if err != nil {
-		return nil, fmt.Errorf("seed posts: %w", err)
+		return nil, err
+	}
+	var initialID post.DarkPostID
+	if seedLocal {
+		initialID, err = seedPosts(ctx, postRepo)
+		if err != nil {
+			return nil, fmt.Errorf("seed posts: %w", err)
+		}
 	}
 
 	jobQueue := queueMemory.NewInMemoryJobQueue(10)
@@ -90,13 +99,34 @@ func (c *WorkerContainer) Close() error {
 /**
  * メモリリポジトリへ見本投稿を入れ、整形対象 ID を返す。
  */
-func seedPosts(repo repository.PostRepository) (post.DarkPostID, error) {
+func seedPosts(ctx context.Context, repo repository.PostRepository) (post.DarkPostID, error) {
 	sample, err := post.New("post-local", "審査待ちの投稿です")
 	if err != nil {
 		return "", err
 	}
-	if err := repo.Create(context.Background(), sample); err != nil {
+	if err := repo.Create(ctx, sample); err != nil {
 		return "", err
 	}
 	return sample.ID(), nil
+}
+
+/**
+ * 環境変数 WORKER_POST_REPOSITORY に応じてメモリ or Firestore のリポジトリを返す。
+ */
+func newPostRepository(ctx context.Context, infra *Infra) (repository.PostRepository, bool, error) {
+	kind := strings.TrimSpace(os.Getenv("WORKER_POST_REPOSITORY"))
+	switch strings.ToLower(kind) {
+	case "firestore":
+		client := infra.Firestore()
+		if client == nil {
+			return nil, false, fmt.Errorf("firestore post repository requested but firestore client is unavailable")
+		}
+		repo, err := repoFirestore.NewPostRepository(client)
+		if err != nil {
+			return nil, false, fmt.Errorf("new firestore post repository: %w", err)
+		}
+		return repo, false, nil
+	default:
+		return repoMemory.NewInMemoryPostRepository(), true, nil
+	}
 }

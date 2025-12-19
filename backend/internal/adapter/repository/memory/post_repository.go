@@ -57,10 +57,15 @@ func (r *InMemoryPostRepository) ListReady(ctx context.Context, limit int) ([]*p
 	defer r.mu.RUnlock()
 
 	result := make([]*post.Post, 0, len(r.store))
+	count := 0
 	for _, p := range r.store {
 		// 公開待ちのみ返す
 		if p != nil && p.IsReady() {
 			result = append(result, p)
+			count++
+			if limit > 0 && count >= limit {
+				break
+			}
 		}
 	}
 	return result, nil

@@ -10,6 +10,7 @@ import (
 var (
 	ErrJobAlreadyScheduled = errors.New("queue: 同一 ID のジョブがすでに存在します")
 	ErrQueueClosed         = errors.New("queue: ジョブキューが停止しました")
+	ErrContextClosed       = errors.New("queue: コンテキストが終了しました")
 )
 
 /**

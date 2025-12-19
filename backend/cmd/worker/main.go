@@ -36,7 +36,7 @@ func runLoop(ctx context.Context, container *app.WorkerContainer) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("worker shutting down")
+			log.Printf("worker shutting down: %v", ctx.Err())
 			return
 		default:
 		}
@@ -44,7 +44,9 @@ func runLoop(ctx context.Context, container *app.WorkerContainer) {
 		postID, err := container.JobQueue.DequeueFormat(ctx)
 		if err != nil {
 			// 中断やキュー停止はそのまま終了する
-			if errors.Is(err, context.Canceled) || errors.Is(err, queue.ErrQueueClosed) {
+			if errors.Is(err, context.Canceled) ||
+				errors.Is(err, queue.ErrQueueClosed) ||
+				errors.Is(err, queue.ErrContextClosed) {
 				return
 			}
 			// それ以外は短い待機後に再試行

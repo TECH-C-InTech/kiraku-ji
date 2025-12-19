@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 
 	"backend/internal/domain/post"
 	"backend/internal/port/queue"
@@ -30,7 +31,7 @@ func NewInMemoryJobQueue(buffer int) *InMemoryJobQueue {
 func (q *InMemoryJobQueue) EnqueueFormat(ctx context.Context, id post.DarkPostID) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("%w: %v", queue.ErrContextClosed, ctx.Err())
 	case q.ch <- id:
 		return nil
 	}
@@ -42,7 +43,7 @@ func (q *InMemoryJobQueue) EnqueueFormat(ctx context.Context, id post.DarkPostID
 func (q *InMemoryJobQueue) DequeueFormat(ctx context.Context) (post.DarkPostID, error) {
 	select {
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return "", fmt.Errorf("%w: %v", queue.ErrContextClosed, ctx.Err())
 	case id, ok := <-q.ch:
 		if !ok {
 			return "", queue.ErrQueueClosed
