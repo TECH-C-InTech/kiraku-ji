@@ -39,7 +39,7 @@ jobs:
         with:
           working-directory: backend
           version: v2.7.2
-          args: --timeout 5m
+          args: --timeout 5m -v --print-resources-usage
 
       - name: Run tests
         run: go test ./...
