@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -62,7 +63,9 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 
 	// サンプル投稿があれば起動直後に処理させる
 	if initialID != "" {
-		_ = jobQueue.EnqueueFormat(ctx, initialID)
+		if err := jobQueue.EnqueueFormat(ctx, initialID); err != nil {
+			log.Printf("seed enqueue failed: %v", err)
+		}
 	}
 
 	usecase := worker.NewFormatPendingUsecase(postRepo, formatter, jobQueue)
