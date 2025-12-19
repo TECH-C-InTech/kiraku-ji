@@ -32,6 +32,8 @@ type WorkerContainer struct {
 }
 
 var formatterCtor = gemini.NewFormatter
+
+// OpenAI 用の整形器を作り、後片付け手順もあわせて返す
 var openaiFormatterFactory = func(apiKey, model, baseURL string) (llm.Formatter, func() error, error) {
 	formatter, err := openaiFormatter.NewFormatter(apiKey, model, baseURL)
 	if err != nil {
@@ -40,6 +42,7 @@ var openaiFormatterFactory = func(apiKey, model, baseURL string) (llm.Formatter,
 	return formatter, formatter.Close, nil
 }
 
+// 環境変数 LLM_PROVIDER に応じて利用する整形器を切り替える
 var formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, error) {
 	switch config.LoadLLMProvider() {
 	case "gemini":
@@ -71,6 +74,7 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 		return nil, err
 	}
 	var initialID post.DarkPostID
+	// メモリリポジトリ利用時のみサンプル投稿を投入しておく
 	if seedLocal {
 		initialID, err = seedPostsFunc(ctx, postRepo)
 		if err != nil {
