@@ -49,6 +49,7 @@ func runLoop(ctx context.Context, container *app.WorkerContainer) {
 		if err != nil {
 			// 中断やキュー停止はそのまま終了する
 			if errors.Is(err, context.Canceled) ||
+				errors.Is(err, context.DeadlineExceeded) ||
 				errors.Is(err, queue.ErrQueueClosed) ||
 				errors.Is(err, queue.ErrContextClosed) {
 				return
