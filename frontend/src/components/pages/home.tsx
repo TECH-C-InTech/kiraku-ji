@@ -45,7 +45,7 @@ export default function HomePage() {
       setCurrentStep("error");
       return;
     }
-    
+
     setCurrentStep("ready");
   };
 
