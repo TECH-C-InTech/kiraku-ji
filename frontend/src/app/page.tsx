@@ -61,10 +61,16 @@ export default function Home() {
         )}
 
         {currentStep === "loading" && (
-          <section className="flex flex-col items-center gap-3 text-center">
+          <section className="flex flex-col items-center gap-4 text-center">
+            <div className="flex h-40 w-40 items-center justify-center rounded-full border border-zinc-300 bg-zinc-100 text-xs text-zinc-500">
+              黒グラキャラ（仮）
+            </div>
             <p className="font-medium text-base">
               少し待っていて、あなたのためのお告げを探すから。
             </p>
+            <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-200">
+              <div className="h-full w-1/3 animate-pulse rounded-full bg-zinc-700" />
+            </div>
             <p className="text-sm text-zinc-500">きらくじを引いています...</p>
           </section>
         )}
