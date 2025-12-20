@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -23,6 +26,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	startHealthServer(ctx)
+
 	container, err := app.NewWorkerContainer(ctx)
 	if err != nil {
 		log.Fatalf("failed to initialize worker: %v", err)
@@ -35,6 +40,39 @@ func main() {
 
 	log.Println("worker started (pending format)")
 	runLoop(ctx, container)
+}
+
+/**
+ * Cloud Run のヘルスチェックに応答するHTTPサーバーを起動する。
+ */
+func startHealthServer(ctx context.Context) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: mux,
+	}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("health server error: %v", err)
+		}
+	}()
 }
 
 /**

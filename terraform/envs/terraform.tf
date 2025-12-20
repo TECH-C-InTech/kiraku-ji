@@ -7,6 +7,11 @@ terraform {
       version = "~> 7.0"
     }
   }
+
+  backend "gcs" {
+    bucket = "kiraku-ji-terraform-state"
+    prefix = "terraform/state"
+  }
 }
 
 provider "google" {

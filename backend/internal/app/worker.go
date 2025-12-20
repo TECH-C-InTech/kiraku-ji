@@ -217,9 +217,6 @@ func ensureWorkerFirestoreEnv() error {
 	if strings.TrimSpace(os.Getenv("GOOGLE_CLOUD_PROJECT")) == "" {
 		missing = append(missing, "GOOGLE_CLOUD_PROJECT")
 	}
-	if strings.TrimSpace(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")) == "" {
-		missing = append(missing, "GOOGLE_APPLICATION_CREDENTIALS")
-	}
 	if len(missing) > 0 {
 		return fmt.Errorf("%w: %s を設定してください", errWorkerFirestoreEnvMissing, strings.Join(missing, ", "))
 	}

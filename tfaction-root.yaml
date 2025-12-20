@@ -1,0 +1,26 @@
+---
+plan_workflow_name: PR
+label_prefixes:
+  tfmigrate: "migrate:"
+
+# drift_detection:
+#   minimum_detection_interval: 7
+#   num_of_issues: 1
+
+aqua:
+  update_checksum:
+    enabled: true
+    skip_push: false
+    prune: true
+
+target_groups:
+  - working_directory: terraform/envs
+    target: terraform/envs
+    gcs_bucket_name_tfmigrate_history: ""
+    template_dir: ""
+    terraform_plan_config:
+      gcp_service_account: github-actions-deploy@kiraku-ji.iam.gserviceaccount.com
+      gcp_workload_identity_provider: projects/656299631590/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+    terraform_apply_config:
+      gcp_service_account: github-actions-deploy@kiraku-ji.iam.gserviceaccount.com
+      gcp_workload_identity_provider: projects/656299631590/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider

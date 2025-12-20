@@ -27,3 +27,15 @@ variable "container_image" {
   type        = string
   default     = "asia-northeast1-docker.pkg.dev/kiraku-ji/kiraku-ji-api/api:latest"
 }
+
+variable "github_org" {
+  description = "GitHub organization name"
+  type        = string
+  default     = "TECH-C-InTech"
+}
+
+variable "github_repo" {
+  description = "GitHub repository name"
+  type        = string
+  default     = "kiraku-ji"
+}

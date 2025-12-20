@@ -12,3 +12,13 @@ output "service_account_email" {
   description = "Service Account email for Cloud Run"
   value       = google_service_account.cloudrun.email
 }
+
+output "workload_identity_provider" {
+  description = "Workload Identity Provider for GitHub Actions"
+  value       = google_iam_workload_identity_pool_provider.github_actions.name
+}
+
+output "github_actions_service_account" {
+  description = "Service Account email for GitHub Actions"
+  value       = google_service_account.github_actions.email
+}

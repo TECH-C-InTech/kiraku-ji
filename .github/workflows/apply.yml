@@ -1,0 +1,74 @@
+---
+name: Apply
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      targets: ${{ steps.list-targets.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquaproj/aqua-installer@v3.2.0
+        with:
+          aqua_version: v2.38.0
+        env:
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
+      - uses: suzuki-shunsuke/tfaction/list-targets@v1.20.1
+        id: list-targets
+
+  apply:
+    needs: setup
+    if: needs.setup.outputs.targets != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.setup.outputs.targets) }}
+    env:
+      TFACTION_TARGET: ${{ matrix.target.target }}
+      TFACTION_JOB_TYPE: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aquaproj/aqua-installer@v3.2.0
+        with:
+          aqua_version: v2.38.0
+        env:
+          AQUA_GITHUB_TOKEN: ${{ github.token }}
+
+      - uses: suzuki-shunsuke/tfaction/export-secrets@v1.20.1
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - uses: suzuki-shunsuke/tfaction/get-target-config@v1.20.1
+        id: target-config
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ steps.target-config.outputs.gcp_workload_identity_provider }}
+          service_account: ${{ steps.target-config.outputs.gcp_service_account }}
+
+      - uses: suzuki-shunsuke/tfaction/setup@v1.20.1
+        id: setup
+        with:
+          github_token: ${{ github.token }}
+
+      - uses: suzuki-shunsuke/tfaction/test@v1.20.1
+        with:
+          github_token: ${{ github.token }}
+
+      - uses: suzuki-shunsuke/tfaction/apply@v1.20.1
+        with:
+          github_token: ${{ github.token }}
