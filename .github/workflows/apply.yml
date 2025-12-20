@@ -14,6 +14,8 @@ jobs:
       contents: read
     outputs:
       targets: ${{ steps.list-targets.outputs.targets }}
+    env:
+      AQUA_DISABLE_SLSA: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
@@ -21,6 +23,7 @@ jobs:
           aqua_version: v2.38.0
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
+          AQUA_DISABLE_SLSA: true
       - uses: suzuki-shunsuke/tfaction/list-targets@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         id: list-targets
 
@@ -39,6 +42,7 @@ jobs:
     env:
       TFACTION_TARGET: ${{ matrix.target.target }}
       TFACTION_JOB_TYPE: terraform
+      AQUA_DISABLE_SLSA: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
@@ -47,6 +51,7 @@ jobs:
           aqua_version: v2.38.0
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
+          AQUA_DISABLE_SLSA: true
 
       - uses: suzuki-shunsuke/tfaction/export-secrets@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         with:
