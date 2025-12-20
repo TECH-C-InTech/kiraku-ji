@@ -8,17 +8,18 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
 
-type Step = "input" | "loading" | "ready" | "result" | "error";
+type Step = "input" | "loading" | "ready" | "error";
 
 export default function HomePage() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("input");
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [resultText, setResultText] = useState("");
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -36,7 +37,6 @@ export default function HomePage() {
   const handleRetry = useCallback((options?: { clearContent?: boolean }) => {
     if (options?.clearContent) {
       setContent("");
-      setResultText("");
     }
     setErrorMessage("");
     setCurrentStep("input");
@@ -69,8 +69,10 @@ export default function HomePage() {
     setErrorMessage("");
     try {
       const draw = await fetchRandomDraw();
-      setResultText(draw.result);
-      setCurrentStep("result");
+      const query = new URLSearchParams({ text: draw.result });
+      setIsModalOpen(false);
+      handleRetry({ clearContent: true });
+      router.push(`/result?${query.toString()}`);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : defaultDrawError,
@@ -251,19 +253,6 @@ export default function HomePage() {
                     className="h-auto w-[180px] md:w-[200px]"
                   />
                   <span className="sr-only">闇を引く</span>
-                </button>
-              </section>
-            )}
-
-            {currentStep === "result" && (
-              <section className="flex flex-col gap-4 text-center">
-                <p className="font-medium text-base">{resultText}</p>
-                <button
-                  className="rounded-full border border-zinc-300 px-6 py-3 font-semibold text-sm text-zinc-700"
-                  type="button"
-                  onClick={() => handleRetry({ clearContent: true })}
-                >
-                  もう一度懺悔する
                 </button>
               </section>
             )}
