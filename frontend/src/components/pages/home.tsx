@@ -17,6 +17,7 @@ export default function HomePage() {
   const contentLength = content.length;
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
+  const isSubmitButtonDisabled = isSubmitDisabled || currentStep === "loading";
 
   const handleContentChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setContent(event.target.value);
@@ -125,7 +126,7 @@ export default function HomePage() {
                   className="rounded-full bg-zinc-900 px-6 py-3 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
                   type="button"
                   onClick={handleSubmit}
-                  disabled={isSubmitDisabled || currentStep === "loading"}
+                  disabled={isSubmitButtonDisabled}
                 >
                   懺悔する
                 </button>
