@@ -17,6 +17,7 @@ import (
 
 func TestNewWorkerContainer_UsesFirestoreRepository(t *testing.T) {
 	setRequiredFirestoreEnv(t)
+	defer stubJobQueueFactory(t)()
 
 	stubFormatter := &stubFormatter{}
 	origFormatterFactory := formatterFactory
@@ -97,6 +98,7 @@ func TestNewWorkerContainer_PostRepoError(t *testing.T) {
 
 func TestNewWorkerContainer_FormatterFactoryError(t *testing.T) {
 	setRequiredFirestoreEnv(t)
+	defer stubJobQueueFactory(t)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -126,6 +128,7 @@ func TestNewWorkerContainer_MissingGeminiConfig(t *testing.T) {
 	t.Setenv("LLM_PROVIDER", "gemini")
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("GEMINI_MODEL", "")
+	defer stubJobQueueFactory(t)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -182,8 +185,8 @@ func TestNewWorkerContainer_JobQueueFactoryError(t *testing.T) {
 	defer func() { postRepositoryFactory = origRepoFactory }()
 
 	origJobQueueFactory := jobQueueFactory
-	jobQueueFactory = func(infra *Infra) (queue.JobQueue, bool, error) {
-		return nil, false, errors.New("job queue error")
+	jobQueueFactory = func(infra *Infra) (queue.JobQueue, error) {
+		return nil, errors.New("job queue error")
 	}
 	defer func() { jobQueueFactory = origJobQueueFactory }()
 
@@ -297,6 +300,15 @@ func setRequiredFirestoreEnv(t *testing.T) {
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/service-account.json")
 }
 
+func stubJobQueueFactory(t *testing.T) func() {
+	t.Helper()
+	orig := jobQueueFactory
+	jobQueueFactory = func(infra *Infra) (queue.JobQueue, error) {
+		return &noopJobQueue{}, nil
+	}
+	return func() { jobQueueFactory = orig }
+}
+
 type stubFormatter struct {
 	closeErr error
 	closed   bool
@@ -334,6 +346,20 @@ func (s *stubJobQueue) Close() error {
 		s.closeErr = queue.ErrQueueClosed
 	}
 	return s.closeErr
+}
+
+type noopJobQueue struct{}
+
+func (noopJobQueue) EnqueueFormat(ctx context.Context, id post.DarkPostID) error {
+	return nil
+}
+
+func (noopJobQueue) DequeueFormat(ctx context.Context) (post.DarkPostID, error) {
+	return "", nil
+}
+
+func (noopJobQueue) Close() error {
+	return nil
 }
 
 var _ llm.Formatter = (*stubFormatter)(nil)

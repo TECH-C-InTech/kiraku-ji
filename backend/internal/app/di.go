@@ -46,8 +46,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, fmt.Errorf("init post repository: %w", err)
 	}
-	// 投稿整形キューは JOB_QUEUE_BACKEND の指定に応じて実装を切り替える
-	jobQueue, _, err := jobQueueFactory(infra)
+	// 投稿整形キューは Firestore 固定の format_jobs を利用する
+	jobQueue, err := jobQueueFactory(infra)
 	if err != nil {
 		return nil, fmt.Errorf("init job queue: %w", err)
 	}
