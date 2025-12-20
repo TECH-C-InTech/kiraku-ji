@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import ResultCard from "@/components/modal/result-card";
 import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
 
@@ -236,16 +237,10 @@ export default function HomePage() {
             )}
 
             {currentStep === "result" && (
-              <section className="flex flex-col gap-4 text-center">
-                <p className="font-medium text-base">{resultText}</p>
-                <button
-                  className="rounded-full border border-zinc-300 px-6 py-3 font-semibold text-sm text-zinc-700"
-                  type="button"
-                  onClick={() => handleRetry({ clearContent: true })}
-                >
-                  もう一度懺悔する
-                </button>
-              </section>
+              <ResultCard
+                resultText={resultText}
+                onRetry={() => handleRetry({ clearContent: true })}
+              />
             )}
 
             {currentStep === "error" && (
