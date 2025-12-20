@@ -15,13 +15,13 @@ jobs:
     outputs:
       targets: ${{ steps.list-targets.outputs.targets }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: aquaproj/aqua-installer@v3.2.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
         with:
           aqua_version: v2.38.0
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
-      - uses: suzuki-shunsuke/tfaction/list-targets@v1.20.1
+      - uses: suzuki-shunsuke/tfaction/list-targets@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         id: list-targets
 
   apply:
@@ -40,35 +40,35 @@ jobs:
       TFACTION_TARGET: ${{ matrix.target.target }}
       TFACTION_JOB_TYPE: terraform
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: aquaproj/aqua-installer@v3.2.0
+      - uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
         with:
           aqua_version: v2.38.0
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
 
-      - uses: suzuki-shunsuke/tfaction/export-secrets@v1.20.1
+      - uses: suzuki-shunsuke/tfaction/export-secrets@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - uses: suzuki-shunsuke/tfaction/get-target-config@v1.20.1
+      - uses: suzuki-shunsuke/tfaction/get-target-config@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         id: target-config
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ steps.target-config.outputs.gcp_workload_identity_provider }}
           service_account: ${{ steps.target-config.outputs.gcp_service_account }}
 
-      - uses: suzuki-shunsuke/tfaction/setup@v1.20.1
+      - uses: suzuki-shunsuke/tfaction/setup@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         id: setup
         with:
           github_token: ${{ github.token }}
 
-      - uses: suzuki-shunsuke/tfaction/test@v1.20.1
+      - uses: suzuki-shunsuke/tfaction/test@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         with:
           github_token: ${{ github.token }}
 
-      - uses: suzuki-shunsuke/tfaction/apply@v1.20.1
+      - uses: suzuki-shunsuke/tfaction/apply@4562d910bbacecf384c8aeda25332284fcf05f38 # v1.20.1
         with:
           github_token: ${{ github.token }}
