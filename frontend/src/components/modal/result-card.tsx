@@ -30,11 +30,7 @@ export default function ResultCard({
     ? "flex flex-row flex-wrap items-center justify-center gap-3"
     : "flex flex-col items-center";
   const primaryButton = (
-    <button
-      className={mergedButtonClassName}
-      type="button"
-      onClick={onRetry}
-    >
+    <button className={mergedButtonClassName} type="button" onClick={onRetry}>
       {buttonLabel}
     </button>
   );
@@ -70,7 +66,7 @@ export default function ResultCard({
             strokeDasharray="14 6 4 10 8 12 6 5 9 7"
           />
         </svg>
-        <p className="relative z-10 font-medium text-base text-zinc-100 leading-relaxed whitespace-pre-wrap break-words">
+        <p className="relative z-10 whitespace-pre-wrap break-words font-medium text-base text-zinc-100 leading-relaxed">
           {resultText}
         </p>
       </div>

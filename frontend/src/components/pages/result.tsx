@@ -33,7 +33,7 @@ export default function FortuneResultPage({
         await navigator.clipboard.writeText(shareText);
         window.alert("共有用のテキストをコピーしました");
         return;
-      } catch (error) {
+      } catch (_error) {
         window.alert("共有に失敗しました");
         return;
       }

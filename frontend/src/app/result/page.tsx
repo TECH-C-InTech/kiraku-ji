@@ -6,8 +6,8 @@ type ResultPageProps = {
   };
 };
 
-/** 
- * おみくじ結果ページを描画する。 
+/**
+ * おみくじ結果ページを描画する。
  */
 export default function ResultPage({ searchParams }: ResultPageProps) {
   const textParam = searchParams?.text;
