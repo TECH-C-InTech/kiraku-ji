@@ -23,13 +23,19 @@ export const createPost = async (content: string) => {
     content,
   };
 
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 10_000);
+
   const response = await fetch(`${API_BASE_URL}/posts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal: controller.signal,
   });
+
+  window.clearTimeout(timeoutId);
 
   if (!response.ok) {
     let errorMessage = "投稿に失敗しました";
