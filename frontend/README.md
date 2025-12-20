@@ -12,16 +12,6 @@ pnpm dev
 
 ブラウザで `http://localhost:3000` を開くと画面を確認できます。
 
-## 環境変数
-
-- `NEXT_PUBLIC_API_BASE`: バックエンド API のベース URL（未設定の場合は起動時に例外）
-
-`.env.local` の例:
-
-```
-NEXT_PUBLIC_API_BASE=http://localhost:8080
-```
-
 ## ディレクトリ構成
 
 現状は `src/app` と `src/lib` のみで運用しています。必要になったら以下のディレクトリを追加する方針です。
