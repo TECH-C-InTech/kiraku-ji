@@ -244,8 +244,7 @@ export default function HomePage() {
               </section>
             )}
 
-            {(currentStep === "ready" ||
-              (currentStep === "loading" && loadingOrigin === "ready")) && (
+            {currentStep === "ready" && (
               <section className="flex flex-col gap-4 text-center">
                 <p className="font-medium text-base">
                   お告げを捧げました。きらくじを受け取りますか？
@@ -256,7 +255,6 @@ export default function HomePage() {
                   aria-label="闇を引く"
                   title="闇を引く"
                   onClick={handleDraw}
-                  disabled={currentStep === "loading"}
                 >
                   <Image
                     src="/hurt_dark.png"
