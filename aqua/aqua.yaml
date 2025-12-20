@@ -1,8 +1,5 @@
 checksum:
   enabled: true
-  require_checksum: true
-slsa_verifier:
-  enabled: false
 registries:
   - type: standard
     ref: v4.446.0 # renovate: depName=aquaproj/aqua-registry

@@ -22,6 +22,7 @@ jobs:
           aqua_version: v2.38.0
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
+          AQUA_DISABLE_SLSA: true
       - uses: suzuki-shunsuke/tfaction/list-targets@v1.20.1
         id: list-targets
 
@@ -48,6 +49,7 @@ jobs:
           aqua_version: v2.38.0
         env:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
+          AQUA_DISABLE_SLSA: true
 
       - uses: suzuki-shunsuke/tfaction/export-secrets@v1.20.1
         with:
