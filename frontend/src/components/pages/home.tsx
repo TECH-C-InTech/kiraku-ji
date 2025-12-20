@@ -68,8 +68,8 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans text-zinc-900">
-      <main className="flex w-full max-w-xl flex-col gap-8 rounded-3xl bg-white px-8 py-12 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 py-8 px-4 font-sans text-zinc-900">
+      <main className="flex w-full max-w-lg flex-col gap-8 rounded-3xl bg-white px-6 py-10 shadow-lg md:max-w-xl md:px-8 md:py-12">
         <header className="text-center">
           <h1 className="font-semibold text-xl">きらくじ（仮UI）</h1>
         </header>
