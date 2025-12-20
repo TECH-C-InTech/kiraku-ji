@@ -9,6 +9,9 @@ export type CreatePostResponse = {
   post_id: string;
 };
 
+// APIのベースURLの末尾のスラッシュを取り除く。
+const normalizeApiBaseUrl = () => getApiBaseUrl().replace(/\/+$/, "");
+
 /**
  * 闇投稿を登録する。
  */
@@ -22,7 +25,7 @@ export const createPost = async (content: string) => {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 10_000);
 
-  const response = await fetch(`${getApiBaseUrl()}/posts`, {
+  const response = await fetch(`${normalizeApiBaseUrl()}/posts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
