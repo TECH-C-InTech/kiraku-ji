@@ -86,7 +86,6 @@ jobs:
           echo "Testing ${SERVICE_URL}/draws/random"
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/draws/random")
 
-          # データが無い環境は 404 を許容する（動作確認は「応答できること」を優先）
           if [ $RESPONSE -eq 200 ] || [ $RESPONSE -eq 404 ]; then
             echo "✅ Smoke test passed (HTTP $RESPONSE)"
           else
