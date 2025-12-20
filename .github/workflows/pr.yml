@@ -1,0 +1,22 @@
+name: PR
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions: {}
+
+jobs:
+  tfaction:
+    uses: suzuki-shunsuke/tfaction-workflows/.github/workflows/plan.yaml@v1
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    secrets:
+      gh_app_id: ${{ secrets.GH_APP_ID }}
+      gh_app_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+

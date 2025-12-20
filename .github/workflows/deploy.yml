@@ -1,0 +1,95 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+
+env:
+  PROJECT_ID: kiraku-ji
+  REGION: asia-northeast1
+  SERVICE_NAME: kiraku-ji-api
+  WORKER_SERVICE_NAME: kiraku-ji-worker
+  WORKER_SERVICE_ACCOUNT: kiraku-ji-api-sa@kiraku-ji.iam.gserviceaccount.com
+  REPOSITORY: kiraku-ji-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:latest \
+            ./backend
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --service-account=${{ env.WORKER_SERVICE_ACCOUNT }} \
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }} \
+            --set-secrets=CORS_ALLOW_ORIGINS=CORS_ALLOW_ORIGINS:latest
+
+      - name: Deploy worker to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.WORKER_SERVICE_NAME }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --no-allow-unauthenticated \
+            --service-account=${{ env.WORKER_SERVICE_ACCOUNT }} \
+            --command=./worker \
+            --min-instances=1 \
+            --max-instances=1 \
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},LLM_PROVIDER=openai \
+            --set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest
+
+      - name: Smoke test
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+
+          echo "Testing ${SERVICE_URL}/draws/random"
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${SERVICE_URL}/draws/random)
+
+          # データが無い環境は 404 を許容する（動作確認は「応答できること」を優先）
+          if [ $RESPONSE -eq 200 ] || [ $RESPONSE -eq 404 ]; then
+            echo "✅ Smoke test passed (HTTP $RESPONSE)"
+          else
+            echo "❌ Smoke test failed (HTTP $RESPONSE)"
+            exit 1
+          fi
