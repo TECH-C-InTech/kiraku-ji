@@ -9,11 +9,11 @@ import (
 	"google.golang.org/api/option"
 
 	"backend/internal/adapter/llm/gemini"
-	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
 	"backend/internal/port/llm"
 	"backend/internal/port/queue"
 	"backend/internal/port/repository"
+	workertestutil "backend/internal/usecase/worker/testutil"
 )
 
 func TestNewWorkerContainer_UsesFirestoreRepository(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNewWorkerContainer_UsesFirestoreRepository(t *testing.T) {
 	}
 	defer func() { postRepositoryFactory = origRepoFactory }()
 
-	stubDrawRepo := &workerStubDrawRepository{}
+	stubDrawRepo := &workertestutil.StubDrawRepository{}
 	defer stubDrawRepositoryFactory(t, stubDrawRepo, nil)()
 
 	origInfraFactory := infraFactory
@@ -129,7 +129,7 @@ func TestNewWorkerContainer_DrawRepoError(t *testing.T) {
 func TestNewWorkerContainer_FormatterFactoryError(t *testing.T) {
 	setRequiredFirestoreEnv(t)
 	defer stubJobQueueFactory(t)()
-	defer stubDrawRepositoryFactory(t, &workerStubDrawRepository{}, nil)()
+	defer stubDrawRepositoryFactory(t, &workertestutil.StubDrawRepository{}, nil)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -160,7 +160,7 @@ func TestNewWorkerContainer_MissingGeminiConfig(t *testing.T) {
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("GEMINI_MODEL", "")
 	defer stubJobQueueFactory(t)()
-	defer stubDrawRepositoryFactory(t, &workerStubDrawRepository{}, nil)()
+	defer stubDrawRepositoryFactory(t, &workertestutil.StubDrawRepository{}, nil)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -203,7 +203,7 @@ func TestNewWorkerContainer_FirestoreEnvMissing(t *testing.T) {
 
 func TestNewWorkerContainer_JobQueueFactoryError(t *testing.T) {
 	setRequiredFirestoreEnv(t)
-	defer stubDrawRepositoryFactory(t, &workerStubDrawRepository{}, nil)()
+	defer stubDrawRepositoryFactory(t, &workertestutil.StubDrawRepository{}, nil)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -423,7 +423,6 @@ func (noopJobQueue) Close() error {
 var _ llm.Formatter = (*stubFormatter)(nil)
 var _ queue.JobQueue = (*stubJobQueue)(nil)
 var _ repository.PostRepository = (*workerStubPostRepository)(nil)
-var _ repository.DrawRepository = (*workerStubDrawRepository)(nil)
 
 type workerStubPostRepository struct{}
 
@@ -441,18 +440,4 @@ func (workerStubPostRepository) ListReady(ctx context.Context, limit int) ([]*po
 
 func (workerStubPostRepository) Update(ctx context.Context, p *post.Post) error {
 	return repository.ErrPostNotFound
-}
-
-type workerStubDrawRepository struct{}
-
-func (workerStubDrawRepository) Create(ctx context.Context, d *drawdomain.Draw) error {
-	return nil
-}
-
-func (workerStubDrawRepository) GetByPostID(ctx context.Context, postID post.DarkPostID) (*drawdomain.Draw, error) {
-	return nil, repository.ErrDrawNotFound
-}
-
-func (workerStubDrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, error) {
-	return nil, nil
 }
