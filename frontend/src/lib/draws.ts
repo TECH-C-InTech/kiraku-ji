@@ -1,6 +1,6 @@
 import type { DrawResponse } from "@/types/api";
 import { getApiErrorMessageFromResponse } from "@/utils/api";
-import { getApiBaseUrl } from "./api";
+import { getApiBaseUrl, normalizeApiBaseUrl } from "./api";
 
 /**
  * 検証済みのおみくじをランダムに取得する。

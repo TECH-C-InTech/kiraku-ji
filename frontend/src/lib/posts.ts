@@ -1,9 +1,6 @@
 import type { CreatePostRequest, CreatePostResponse } from "@/types/api";
 import { getApiErrorMessage } from "@/utils/api";
-import { getApiBaseUrl } from "./api";
-
-// APIのベースURLの末尾のスラッシュを取り除く。
-const normalizeApiBaseUrl = () => getApiBaseUrl().replace(/\/+$/, "");
+import { getApiBaseUrl, normalizeApiBaseUrl } from "./api";
 
 /**
  * 闇投稿を登録する。

@@ -10,3 +10,8 @@ export const getApiBaseUrl = () => {
   }
   return trimmedUrl;
 };
+
+/**
+ * API ベースURL末尾のスラッシュを除去して返す。
+ */
+export const normalizeApiBaseUrl = () => getApiBaseUrl().replace(/\/+$/, "");
