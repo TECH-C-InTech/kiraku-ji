@@ -211,7 +211,7 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `OPENAI_BASE_URL` | OpenAI 互換エンドポイントを使う場合の Base URL（通常は空で OK） |
 | `LLM_PROVIDER` | `openai` / `gemini` を指定して使用する LLM を切り替え（未設定時は `openai`） |
 
-`GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` が未設定の場合、Infra の初期化が失敗し API / Worker は起動しません。Worker も API と同様に Firestore リポジトリ固定のため、必ず同じ環境変数を用意してください。
+`GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` が未設定の場合、Infra の初期化が失敗し API / Worker は起動しません。Worker も API と同様に Firestore リポジトリ固定のため、必ず同じ環境変数を用意してください。JobQueue も Firestore 固定 (`format_jobs` コレクション) のため、切り替え用の環境変数は存在しません。
 
 ### API を Firestore へ接続する（エミュレータ非対応）
 
@@ -279,6 +279,37 @@ export GOOGLE_CLOUD_PROJECT=your-project-id
 export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
 go run ./cmd/worker
 ```
+
+### 投稿〜整形までの動作確認
+
+1. すべてのターミナルで Firestore 関連の環境変数を設定する。
+   ```bash
+   export GOOGLE_CLOUD_PROJECT=your-project-id
+   export GOOGLE_APPLICATION_CREDENTIALS=$PWD/service-account.json
+   export OPENAI_API_KEY=sk-xxx        # ダミーキーでも可
+   export LLM_PROVIDER=openai          # Gemini を使う場合は gemini
+   ```
+2. ターミナル A で API を起動する。
+   ```bash
+   go run ./cmd/api
+   ```
+3. ターミナル B で Worker を起動する。起動後に `worker started (pending format)` が出力されれば待機状態。
+   ```bash
+   go run ./cmd/worker
+   ```
+4. ターミナル C から投稿 API を叩いてジョブを enqueue する。
+   ```bash
+   curl -i -X POST http://localhost:8080/posts \
+     -H "Content-Type: application/json" \
+     -d '{"post_id":"post-firestore-check","content":"Firestore への書き込み確認"}'
+   ```
+5. Firestore `format_jobs/post-firestore-check` が追加され、Worker のログに以下いずれかが出力されればジョブを取得できている。
+   ```
+   2025/12/20 12:34:56 formatted post: post-firestore-check
+   # もしくは LLM の鍵がダミーの場合
+   2025/12/20 12:34:56 format error (post=post-firestore-check): format_pending: 整形サービスに接続できません
+   ```
+   LLM の鍵が有効なら `posts/post-firestore-check` の `status` が `ready` へ更新され、`format_jobs` からドキュメントが削除される。
 
 ### LLM ごとの設定例
 
