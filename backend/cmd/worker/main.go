@@ -64,15 +64,14 @@ func runLoop(ctx context.Context, container *app.WorkerContainer) {
 			continue
 		}
 
-			// ジョブを処理し、失敗内容ごとにログの粒度を変える
-			if err := container.FormatPendingUsecase.Execute(ctx, string(postID)); err != nil {
-				switch {
-				// draw 保存に失敗したが再キュー済みのケース
-				case errors.Is(err, usecaseworker.ErrDrawCreationFailed):
-					log.Printf("draw creation failed (post=%s): %v (requeued)", postID, err)
+		// ジョブを処理し、失敗内容ごとにログの粒度を変える
+		if err := container.FormatPendingUsecase.Execute(ctx, string(postID)); err != nil {
+			switch {
+			// draw 保存に失敗したが再キュー済みのケース
+			case errors.Is(err, usecaseworker.ErrDrawCreationFailed):
+				log.Printf("draw creation failed (post=%s): %v (requeued)", postID, err)
 				// 再キューやロールバック自体が失敗した致命的ケース
-				case errors.Is(err, usecaseworker.ErrRequeueFailed),
-					errors.Is(err, usecaseworker.ErrPostRollbackFailed):
+			case errors.Is(err, usecaseworker.ErrRequeueFailed):
 				log.Printf("draw creation rollback failed (post=%s): %v", postID, err)
 			default:
 				// LLM や投稿の整形問題はログに残して次のジョブへ

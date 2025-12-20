@@ -21,7 +21,6 @@ var (
 	ErrContentRejected      = errors.New("format_pending: 投稿内容が拒否されました")
 	ErrDrawCreationFailed   = errors.New("format_pending: おみくじ結果を保存できませんでした")
 	ErrRequeueFailed        = errors.New("format_pending: おみくじ結果保存失敗後の再キューに失敗しました")
-	ErrPostRollbackFailed   = errors.New("format_pending: 投稿状態を pending に戻せませんでした")
 	ErrNilUsecase           = errors.New("format_pending: ユースケースが初期化されていません")
 	ErrNilContext           = errors.New("format_pending: コンテキストが指定されていません")
 )
@@ -96,15 +95,6 @@ func (u *FormatPendingUsecase) Execute(ctx context.Context, postID string) error
 		return nil
 	}
 
-	// 公開待ちへの状態遷移に失敗した場合は元エラーも保持しつつ整形待ちではないとみなす
-	if err := p.MarkReady(); err != nil {
-		return fmt.Errorf("%w: %v", ErrPostNotPending, err)
-	}
-
-	if err := u.postRepo.Update(ctx, p); err != nil {
-		return err
-	}
-
 	drawContent := normalizeDrawContent(validated.FormattedContent)
 	drawEntity, err := drawdomain.New(p.ID(), drawContent)
 	if err != nil {
@@ -112,13 +102,19 @@ func (u *FormatPendingUsecase) Execute(ctx context.Context, postID string) error
 	}
 	drawEntity.MarkVerified()
 	if err := u.drawRepo.Create(ctx, drawEntity); err != nil {
-		if err := u.rollbackPostToPending(ctx, p); err != nil {
-			return fmt.Errorf("%w: %v", ErrPostRollbackFailed, err)
-		}
 		if err := u.requeueFormatJob(ctx, p.ID()); err != nil {
 			return fmt.Errorf("%w: %v", ErrRequeueFailed, err)
 		}
 		return fmt.Errorf("%w: %v", ErrDrawCreationFailed, err)
+	}
+
+	// 公開待ちへの状態遷移に失敗した場合は元エラーも保持しつつ整形待ちではないとみなす
+	if err := p.MarkReady(); err != nil {
+		return fmt.Errorf("%w: %v", ErrPostNotPending, err)
+	}
+
+	if err := u.postRepo.Update(ctx, p); err != nil {
+		return err
 	}
 
 	return nil
@@ -139,13 +135,4 @@ func (u *FormatPendingUsecase) requeueFormatJob(ctx context.Context, postID post
 		return errors.New("format_pending: 再整形ジョブキューが未設定です")
 	}
 	return u.jobQueue.EnqueueFormat(ctx, postID)
-}
-
-func (u *FormatPendingUsecase) rollbackPostToPending(ctx context.Context, p *post.Post) error {
-	// ready へ進めた投稿を pending に戻し、再整形を可能にする
-	pending, err := post.Restore(p.ID(), p.Content(), post.StatusPending)
-	if err != nil {
-		return err
-	}
-	return u.postRepo.Update(ctx, pending)
 }
