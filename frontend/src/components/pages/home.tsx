@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, useState } from "react";
+import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
 
 type Step = "input" | "loading" | "result" | "error";
@@ -9,9 +10,7 @@ export default function HomePage() {
   const [currentStep, setCurrentStep] = useState<Step>("input");
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [resultText] = useState(
-    "今日のきらくじ: ここに結果テキストが入ります。",
-  );
+  const [resultText, setResultText] = useState("");
   const contentLength = content.length;
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
@@ -20,7 +19,11 @@ export default function HomePage() {
     setContent(event.target.value);
   };
 
-  const handleRetry = () => {
+  const handleRetry = (options?: { clearContent?: boolean }) => {
+    if (options?.clearContent) {
+      setContent("");
+      setResultText("");
+    }
     setErrorMessage("");
     setCurrentStep("input");
   };
@@ -33,6 +36,8 @@ export default function HomePage() {
     setErrorMessage("");
     try {
       await createPost(content.trim());
+      const draw = await fetchRandomDraw();
+      setResultText(draw.result);
       setCurrentStep("result");
     } catch (error) {
       setErrorMessage(
@@ -98,7 +103,7 @@ export default function HomePage() {
             <button
               className="rounded-full border border-zinc-300 px-6 py-3 font-semibold text-sm text-zinc-700"
               type="button"
-              onClick={handleRetry}
+              onClick={() => handleRetry({ clearContent: true })}
             >
               もう一度懺悔する
             </button>
@@ -111,7 +116,7 @@ export default function HomePage() {
             <button
               className="rounded-full border border-red-200 px-6 py-3 font-semibold text-red-700 text-sm"
               type="button"
-              onClick={handleRetry}
+              onClick={() => handleRetry()}
             >
               入力画面へ戻る
             </button>
