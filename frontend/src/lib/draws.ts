@@ -1,12 +1,12 @@
 import type { DrawResponse } from "@/types/api";
 import { getApiErrorMessageFromResponse } from "@/utils/api";
-import { getApiBaseUrl, normalizeApiBaseUrl } from "./api";
+import { normalizeApiBaseUrl } from "./api";
 
 /**
  * 検証済みのおみくじをランダムに取得する。
  */
 export const fetchRandomDraw = async (): Promise<DrawResponse> => {
-  const response = await fetch(`${getApiBaseUrl()}/draws/random`);
+  const response = await fetch(`${normalizeApiBaseUrl()}/draws/random`);
 
   if (!response.ok) {
     const errorMessage = await getApiErrorMessageFromResponse(
