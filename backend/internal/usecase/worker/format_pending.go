@@ -33,7 +33,7 @@ type FormatPendingUsecase struct {
 	postRepo repository.PostRepository
 	drawRepo repository.DrawRepository
 	llm      llm.Formatter
-	jobQueue queue.JobQueue // TODO: 再整形の再キュー処理で利用予定
+	jobQueue queue.JobQueue
 }
 
 // 依存をまとめて整形用ユースケースを組み立てる。
