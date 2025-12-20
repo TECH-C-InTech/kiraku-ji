@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"backend/internal/config"
+	drawdomain "backend/internal/domain/draw"
 	"backend/internal/port/llm"
 
 	githubOpenAI "github.com/sashabaranov/go-openai"
@@ -18,6 +19,16 @@ type stubChatClient struct {
 	capturedCtx context.Context
 	capturedReq githubOpenAI.ChatCompletionRequest
 }
+
+var (
+	fortuneShort         = "今日のきらくじ: 胸の奥が重く曇ります。反応を待ちながら様子を見ます。最後は少し笑えて癒されます。"
+	fortuneValid         = "今日のきらくじ: 心の奥がじっと湿って、気になる言葉が何度も頭に残り、寝不足も続いています。ひとつずつ事実を確認し、記録を残して、反応を待ちながら淡々と片付け、手順を崩さず進めます。最後には執念が効いて小さな勝ちを拾えたと笑え、ふっと癒されます。"
+	fortuneLong          = "今日のきらくじ: 心の奥がじっと湿って、気になる言葉が何度も頭に残り、寝不足も続き、ため息が増えています。ひとつずつ事実を確認し、記録を残して、反応を待ちながら淡々と片付け、手順を崩さず進め、証拠の順序も丁寧に整えます。最後には執念が効いて小さな勝ちを拾えたと笑え、ふっと癒される余韻がしばらく長く残ります。"
+	fortuneKeyword       = "今日のきらくじ: 心の奥がじっと湿って、気になる言葉が何度も頭に残り、killという語がちらついています。ひとつずつ事実を確認し、記録を残して、反応を待ちながら淡々と片付けます。最後には執念が効いて小さな勝ちを拾えたと笑え、ふっと癒されます。"
+	fortuneURL           = "今日のきらくじ: 心の奥がじっと湿って、気になる言葉が何度も頭に残り、https://example.comの通知が気になります。ひとつずつ事実を確認し、記録を残して、反応を待ちながら淡々と片付けます。最後には執念が効いて小さな勝ちを拾えたと笑え、ふっと癒されます。"
+	fortuneMissingPrefix = "心の奥がじっと湿って、気になる言葉が何度も頭に残り、寝不足も少し続いて眠りも浅くなっています。ひとつずつ事実を確認し、記録を残して、反応を待ちながら淡々と片付け、手順を崩さず進めます。最後には執念が効いて小さな勝ちを拾えたと笑え、ふっと癒されます。"
+	fortuneTwoSentences  = "今日のきらくじ: 心の奥がじっと湿って、気になる言葉が何度も頭に残り、寝不足も続いています。ひとつずつ事実を確認し、記録を残して、反応を待ちながら淡々と片付け、手順を崩さず黙々と進め、返信の時間も決め、痕跡を整え、最後は少し笑えて癒されます。"
+)
 
 func (s *stubChatClient) CreateChatCompletion(ctx context.Context, req githubOpenAI.ChatCompletionRequest) (githubOpenAI.ChatCompletionResponse, error) {
 	s.capturedCtx = ctx
@@ -110,7 +121,7 @@ func TestFormatterValidate(t *testing.T) {
 	f := &Formatter{}
 	result, err := f.Validate(context.Background(), &llm.FormatResult{
 		DarkPostID:       "post",
-		FormattedContent: " 整形済み ",
+		FormattedContent: drawdomain.FormattedContent(fortuneValid),
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -124,7 +135,7 @@ func TestFormatterValidateRejects(t *testing.T) {
 	f := &Formatter{}
 	result, err := f.Validate(context.Background(), &llm.FormatResult{
 		DarkPostID:       "post",
-		FormattedContent: "含む kill",
+		FormattedContent: drawdomain.FormattedContent(fortuneKeyword),
 	})
 	if !errors.Is(err, llm.ErrContentRejected) {
 		t.Fatalf("expected rejected, got %v", err)
@@ -218,16 +229,28 @@ func TestValidateFormatRequestEmptyContent(t *testing.T) {
 }
 
 func TestShouldReject(t *testing.T) {
-	if reason, ok := shouldReject("visit http://example.com"); !ok || reason == "" {
+	if reason, ok := shouldReject(fortuneShort); !ok || !strings.Contains(reason, "短すぎます") {
+		t.Fatalf("expected rejection for short text")
+	}
+	if reason, ok := shouldReject(fortuneLong); !ok || !strings.Contains(reason, "長すぎます") {
+		t.Fatalf("expected rejection for long text")
+	}
+	if reason, ok := shouldReject(fortuneURL); !ok || !strings.Contains(reason, "URL") {
 		t.Fatalf("expected rejection for URL")
 	}
-	if reason, ok := shouldReject("clean text"); ok || reason != "" {
+	if reason, ok := shouldReject(fortuneMissingPrefix); !ok || !strings.Contains(reason, "冒頭") {
+		t.Fatalf("expected rejection for prefix")
+	}
+	if reason, ok := shouldReject(fortuneTwoSentences); !ok || !strings.Contains(reason, "3文") {
+		t.Fatalf("expected rejection for sentence count")
+	}
+	if reason, ok := shouldReject(fortuneValid); ok || reason != "" {
 		t.Fatalf("expected acceptance, got %v %v", ok, reason)
 	}
 }
 
 func TestShouldRejectKeywords(t *testing.T) {
-	if reason, ok := shouldReject("Please do not suicide"); !ok || !strings.Contains(reason, "suicide") {
+	if reason, ok := shouldReject(fortuneKeyword); !ok || !strings.Contains(reason, "kill") {
 		t.Fatalf("expected keyword rejection, reason=%v", reason)
 	}
 }
