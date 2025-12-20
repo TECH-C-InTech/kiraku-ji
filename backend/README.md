@@ -330,6 +330,10 @@ go run ./cmd/worker
    export LLM_PROVIDER=gemini
    go run ./cmd/worker
    ```
+### 投稿→整形→draw 生成フロー
+
+投稿 API から整形ワーカー、draw 公開までの処理を図にしたメモを `docs/draw_flow.md` に置いています。  
+投稿保存→`format_jobs` キュー→FormatPendingUsecase→`draws` の流れや、手動検証手順の参考にしてください。
 
 ---
 
