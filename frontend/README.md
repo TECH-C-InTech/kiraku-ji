@@ -1,6 +1,8 @@
 # フロントエンド README
+
 Next.js（App Router）+ TypeScript のフロントエンドです。ディレクトリ構成は以下の記事を参考に整理しています。  
-参考: https://zenn.dev/yamu_official/articles/70f59488e8415d
+
+- [Next.js 最適フォルダ(ディレクトリ)構成・設計の話](https://zenn.dev/yamu_official/articles/70f59488e8415d)
 
 ## 起動手順
 
