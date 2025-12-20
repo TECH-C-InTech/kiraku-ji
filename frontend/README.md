@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# フロントエンド README
 
-## Getting Started
+Next.js（React）をベースにしたフロントエンドです。バックエンドのクリーンアーキテクチャ（Hexagonal 寄り）に合わせ、責務の分離・拡張しやすさ・テスト容易性を重視しています。
 
-First, run the development server:
+## 起動手順
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで `http://localhost:3000` を開くと画面を確認できます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 設計方針（バックエンドと整合）
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- ビジネスロジックは Application（ユースケース）に集約し、UI は入出力と表示に専念させる。
+- HTTP やブラウザ API などの外部依存は Infrastructure に寄せ、Domain / Application は外部を知らない。
+- 依存方向は内向き一方向（UI → Application → Domain）。外側は内側を知るが、逆依存は持たない。
+- 原則は関心の分離。副作用を押し出し、テストしやすい形を保つ。
 
-## Learn More
+## レイヤ構成と責務
 
-To learn more about Next.js, take a look at the following resources:
+- UI: ページ・コンポーネント・スタイル。ユーザー操作を受け、Application のユースケースを呼び出す。
+- Application: 画面の振る舞い・状態管理・フォーム調停。Domain のモデルを使い、Infrastructure 経由で外部と通信する。
+- Domain: 純粋なビジネスルール。エンティティや値オブジェクトをここに置き、副作用なしで完結させる。
+- Infrastructure: API クライアント、ブラウザ依存処理などの具体実装。Application/Domain のインターフェースに従う。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## テスト指針
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Domain: 副作用を排除したユニットテストでロジックを検証する。
+- Application: ユースケース単位でモックを用い、状態遷移や分岐を確認する。
+- UI: React Testing Library 等によるコンポーネント統合テストを基本とし、主要フローは E2E（例: Playwright）でカバーする。
+- Infrastructure: API クライアントはモックサーバーを使った統合テストで契約とハンドリングを確認する。
