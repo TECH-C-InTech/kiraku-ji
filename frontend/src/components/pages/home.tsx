@@ -4,7 +4,7 @@ import { type ChangeEvent, useState } from "react";
 import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
 
-type Step = "input" | "loading" | "result" | "error";
+type Step = "input" | "loading" | "ready" | "result" | "error";
 
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState<Step>("input");
@@ -45,7 +45,16 @@ export default function HomePage() {
       setCurrentStep("error");
       return;
     }
+    
+    setCurrentStep("ready");
+  };
 
+  const handleDraw = async () => {
+    if (currentStep !== "ready") {
+      return;
+    }
+    setCurrentStep("loading");
+    setErrorMessage("");
     try {
       const draw = await fetchRandomDraw();
       setResultText(draw.result);
@@ -105,6 +114,21 @@ export default function HomePage() {
               <div className="h-full w-1/3 animate-pulse rounded-full bg-zinc-700" />
             </div>
             <p className="text-sm text-zinc-500">きらくじを引いています...</p>
+          </section>
+        )}
+
+        {currentStep === "ready" && (
+          <section className="flex flex-col gap-4 text-center">
+            <p className="font-medium text-base">
+              投稿が完了しました。おみくじを引きますか？
+            </p>
+            <button
+              className="rounded-full bg-zinc-900 px-6 py-3 font-semibold text-sm text-white"
+              type="button"
+              onClick={handleDraw}
+            >
+              きらくじを引く
+            </button>
           </section>
         )}
 
