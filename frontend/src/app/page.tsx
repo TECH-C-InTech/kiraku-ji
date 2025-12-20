@@ -1,7 +1,7 @@
 "use client";
 
-import { createPost } from "@/lib/posts";
 import { useState } from "react";
+import { createPost } from "@/lib/posts";
 
 type Step = "input" | "loading" | "result" | "error";
 
@@ -99,7 +99,7 @@ export default function Home() {
           <section className="flex flex-col gap-4 text-center">
             <p className="font-medium text-base text-red-600">{errorMessage}</p>
             <button
-              className="rounded-full border border-red-200 px-6 py-3 font-semibold text-sm text-red-700"
+              className="rounded-full border border-red-200 px-6 py-3 font-semibold text-red-700 text-sm"
               type="button"
               onClick={() => setCurrentStep("input")}
             >
