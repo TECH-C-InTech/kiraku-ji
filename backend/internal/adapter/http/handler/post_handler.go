@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -86,6 +87,7 @@ func (h *PostHandler) handleError(c *gin.Context, err error) {
 		errors.Is(err, postusecase.ErrJobAlreadyScheduled):
 		c.JSON(http.StatusConflict, errorResponse{Message: messagePostConflict})
 	default:
+		log.Printf("POST /posts 失敗: %v", err)
 		c.JSON(http.StatusInternalServerError, errorResponse{Message: messageInternalError})
 	}
 }
