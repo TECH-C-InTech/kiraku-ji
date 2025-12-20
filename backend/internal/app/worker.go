@@ -75,8 +75,8 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 		return nil, err
 	}
 
-	// ジョブキューは JOB_QUEUE_BACKEND で選択する
-	jobQueue, _, err := jobQueueFactory(infra)
+	// ジョブキューは Firestore 固定で共有する
+	jobQueue, err := jobQueueFactory(infra)
 	if err != nil {
 		return nil, fmt.Errorf("init job queue: %w", err)
 	}
