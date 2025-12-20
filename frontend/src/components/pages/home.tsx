@@ -1,6 +1,12 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
 
@@ -26,14 +32,14 @@ export default function HomePage() {
     setContent(event.target.value);
   };
 
-  const handleRetry = (options?: { clearContent?: boolean }) => {
+  const handleRetry = useCallback((options?: { clearContent?: boolean }) => {
     if (options?.clearContent) {
       setContent("");
       setResultText("");
     }
     setErrorMessage("");
     setCurrentStep("input");
-  };
+  }, []);
 
   const handleSubmit = async () => {
     if (isSubmitDisabled || currentStep === "loading") {
@@ -126,7 +132,7 @@ export default function HomePage() {
       document.removeEventListener("keydown", handleKeyDown);
       triggerButtonRef.current?.focus();
     };
-  }, [isModalOpen]);
+  }, [handleRetry, isModalOpen]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-8 font-sans text-zinc-900 md:px-0">
@@ -150,7 +156,7 @@ export default function HomePage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8"
           role="dialog"
           aria-modal="true"
-          onClick={() => {
+          onPointerDown={() => {
             setIsModalOpen(false);
             handleRetry();
           }}
@@ -158,10 +164,10 @@ export default function HomePage() {
           <main
             className="relative flex w-full max-w-lg flex-col gap-8 rounded-3xl bg-white px-6 py-10 shadow-lg md:max-w-xl md:px-8 md:py-12"
             ref={modalRef}
-            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
           >
             <button
-              className="absolute right-4 top-4 rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-200"
+              className="absolute top-4 right-4 rounded-full bg-zinc-100 px-3 py-1 font-semibold text-xs text-zinc-600 hover:bg-zinc-200"
               type="button"
               onClick={() => {
                 setIsModalOpen(false);
