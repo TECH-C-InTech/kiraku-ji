@@ -1,32 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-type Step = "input" | "loading" | "result";
+import { fetchRandomDraw } from "../lib/draws";
+import { createPost } from "../lib/posts";
+
+type Step = "input" | "loading" | "result" | "error";
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>("input");
   const [content, setContent] = useState("");
-  const [resultText] = useState(
-    "今日のきらくじ: ここに結果テキストが入ります。",
-  );
+  const [resultText, setResultText] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const contentLength = content.length;
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
 
-  useEffect(() => {
-    if (currentStep !== "loading") {
+  const handleSubmit = async () => {
+    if (isSubmitDisabled) {
       return;
     }
 
-    const timerId = window.setTimeout(() => {
-      setCurrentStep("result");
-    }, 1500);
+    setCurrentStep("loading");
+    setErrorMessage("");
 
-    return () => {
-      window.clearTimeout(timerId);
-    };
-  }, [currentStep]);
+    try {
+      await createPost(content.trim());
+      const draw = await fetchRandomDraw();
+      setResultText(draw.result);
+      setCurrentStep("result");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "通信に失敗しました";
+      setErrorMessage(message);
+      setCurrentStep("error");
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans text-zinc-900">
@@ -50,12 +59,7 @@ export default function Home() {
             <button
               className="rounded-full bg-zinc-900 px-6 py-3 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
               type="button"
-              onClick={() => {
-                if (isSubmitDisabled) {
-                  return;
-                }
-                setCurrentStep("loading");
-              }}
+              onClick={handleSubmit}
               disabled={isSubmitDisabled}
             >
               懺悔する
@@ -80,6 +84,28 @@ export default function Home() {
               <div className="h-full w-1/3 animate-pulse rounded-full bg-zinc-700" />
             </div>
             <p className="text-sm text-zinc-500">きらくじを引いています...</p>
+          </section>
+        )}
+
+        {currentStep === "error" && (
+          <section className="flex flex-col gap-4 text-center">
+            <p className="font-medium text-base">{errorMessage}</p>
+            <div className="flex flex-col gap-3">
+              <button
+                className="rounded-full bg-zinc-900 px-6 py-3 font-semibold text-sm text-white"
+                type="button"
+                onClick={handleSubmit}
+              >
+                もう一度試す
+              </button>
+              <button
+                className="rounded-full border border-zinc-300 px-6 py-3 font-semibold text-sm text-zinc-700"
+                type="button"
+                onClick={() => setCurrentStep("input")}
+              >
+                入力に戻る
+              </button>
+            </div>
           </section>
         )}
 
