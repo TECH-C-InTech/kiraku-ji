@@ -204,7 +204,6 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `GOOGLE_CLOUD_PROJECT` | Firestore を利用する GCP / Firebase プロジェクト ID（必須） |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Firestore へ接続するサービスアカウント JSON のパス（必須） |
 | `FIRESTORE_EMULATOR_HOST` | Firestore Emulator を利用する場合のホスト名（Worker など開発用） |
-| `WORKER_POST_REPOSITORY` | `firestore` を指定するとワーカーが Firestore PostRepository を利用（未設定時はメモリ実装） |
 | `GEMINI_API_KEY` | Gemini formatter を使用する際の API キー |
 | `GEMINI_MODEL` | 利用する Gemini モデル名（未設定時は `gemini-2.5-flash`） |
 | `OPENAI_API_KEY` | OpenAI formatter を使用する際の API キー |
@@ -212,7 +211,7 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `OPENAI_BASE_URL` | OpenAI 互換エンドポイントを使う場合の Base URL（通常は空で OK） |
 | `LLM_PROVIDER` | `openai` / `gemini` を指定して使用する LLM を切り替え（未設定時は `openai`） |
 
-`GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` が未設定の場合、Infra の初期化が失敗し API / Worker は起動しません。
+`GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` が未設定の場合、Infra の初期化が失敗し API / Worker は起動しません。Worker も API と同様に Firestore リポジトリ固定のため、必ず同じ環境変数を用意してください。
 
 ### API を Firestore へ接続する（エミュレータ非対応）
 
@@ -239,7 +238,7 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 
 > API は Firestore Emulator をサポートしていません。常に本番と同じ Firestore（サービスアカウント JSON 経由）へ接続してください。
 
-ワーカーも同じ Firestore を共有します。整形処理も Firestore を読む場合は上記と同じ環境変数を設定し、`WORKER_POST_REPOSITORY=firestore` を指定して起動してください。
+ワーカーも同じ Firestore を共有します。Firestore 待ち受けが未設定のまま `go run ./cmd/worker` を起動した場合はエラーで即終了するため、API と同じく `GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` を先に指定してください。
 
 ### コレクションスキーマ
 
@@ -271,7 +270,15 @@ go run ./cmd/worker
 ```
 
 整形キューを監視し、`LLM_PROVIDER` で指定した LLM（`openai` が既定）で整形して公開準備へ進めます。`LLM_PROVIDER=gemini` を設定すると Gemini 実装に切り替わります。
-Firestore を接続する場合は `WORKER_POST_REPOSITORY=firestore` を設定し、Firestore クライアントが初期化されている必要があります。
+
+Worker でも Firestore への書き込みが必須のため、API 起動時と同じ環境変数を設定してから実行してください。
+
+```bash
+cd backend
+export GOOGLE_CLOUD_PROJECT=your-project-id
+export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+go run ./cmd/worker
+```
 
 ### LLM ごとの設定例
 

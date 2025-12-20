@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,9 +11,7 @@ import (
 	"backend/internal/adapter/llm/gemini"
 	openaiFormatter "backend/internal/adapter/llm/openai"
 	repoFirestore "backend/internal/adapter/repository/firestore"
-	repoMemory "backend/internal/adapter/repository/memory"
 	"backend/internal/config"
-	"backend/internal/domain/post"
 	"backend/internal/port/llm"
 	"backend/internal/port/queue"
 	"backend/internal/port/repository"
@@ -53,36 +52,31 @@ var formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, e
 	}
 }
 var postRepositoryFactory = newPostRepository
-var seedPostsFunc = seedPosts
 var infraFactory = NewInfra
-var samplePostFactory = func() (*post.Post, error) {
-	return post.New("post-local", "審査待ちの投稿です")
-}
+var errWorkerFirestoreEnvMissing = errors.New("worker: Firestore 環境変数が未設定です")
 
 /**
  * ワーカー稼働に必要なインフラ、LLM、キューなどを整えて返す。
  */
 func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
+	// Firestore 必須の環境変数が欠けていないかを最初に確認する
+	if err := ensureWorkerFirestoreEnv(); err != nil {
+		return nil, err
+	}
+
+	// 共有インフラ（Firestore クライアント等）を初期化する
 	infra, err := infraFactory(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init infra: %w", err)
 	}
 
-	postRepo, seedLocal, err := postRepositoryFactory(ctx, infra)
+	postRepo, err := postRepositoryFactory(ctx, infra)
 	if err != nil {
 		return nil, err
 	}
-	var initialID post.DarkPostID
-	// メモリリポジトリ利用時のみサンプル投稿を投入しておく
-	if seedLocal {
-		initialID, err = seedPostsFunc(ctx, postRepo)
-		if err != nil {
-			return nil, fmt.Errorf("seed posts: %w", err)
-		}
-	}
 
-	// ジョブキューは JOB_QUEUE_BACKEND で選択し、メモリ時は起動直後 enqueue のため seed フラグを受け取る
-	jobQueue, seedMemoryQueue, err := jobQueueFactory(infra)
+	// ジョブキューは JOB_QUEUE_BACKEND で選択する
+	jobQueue, _, err := jobQueueFactory(infra)
 	if err != nil {
 		return nil, fmt.Errorf("init job queue: %w", err)
 	}
@@ -91,13 +85,6 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 	formatter, closeFormatter, err := formatterFactory(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init formatter: %w", err)
-	}
-
-	// サンプル投稿があれば起動直後に処理させる
-	if initialID != "" && seedMemoryQueue {
-		if err := jobQueue.EnqueueFormat(ctx, initialID); err != nil {
-			log.Printf("seed enqueue failed: %v", err)
-		}
 	}
 
 	usecase := worker.NewFormatPendingUsecase(postRepo, formatter, jobQueue)
@@ -129,20 +116,6 @@ func (c *WorkerContainer) Close() error {
 		retErr = mergeCloseError(retErr, "job queue", c.JobQueue.Close)
 	}
 	return mergeCloseError(retErr, "infra", c.closeInfra)
-}
-
-/**
- * メモリリポジトリへ見本投稿を入れ、整形対象 ID を返す。
- */
-func seedPosts(ctx context.Context, repo repository.PostRepository) (post.DarkPostID, error) {
-	sample, err := samplePostFactory()
-	if err != nil {
-		return "", err
-	}
-	if err := repo.Create(ctx, sample); err != nil {
-		return "", err
-	}
-	return sample.ID(), nil
 }
 
 /**
@@ -198,18 +171,34 @@ func newOpenAIFormatter() (llm.Formatter, func() error, error) {
 }
 
 /**
- * 環境変数 WORKER_POST_REPOSITORY に応じてメモリ or Firestore のリポジトリを返す。
+ * Firestore 固定の投稿リポジトリを構築する。
  */
-func newPostRepository(ctx context.Context, infra *Infra) (repository.PostRepository, bool, error) {
-	kind := strings.TrimSpace(os.Getenv("WORKER_POST_REPOSITORY"))
-	switch strings.ToLower(kind) {
-	case "firestore":
-		repo, err := repoFirestore.NewPostRepository(infra.Firestore())
-		if err != nil {
-			return nil, false, fmt.Errorf("new firestore post repository: %w", err)
-		}
-		return repo, false, nil
-	default:
-		return repoMemory.NewInMemoryPostRepository(), true, nil
+func newPostRepository(ctx context.Context, infra *Infra) (repository.PostRepository, error) {
+	// Firestore を使うためクライアントが初期化済みかを先に検証する
+	if infra == nil || infra.Firestore() == nil {
+		return nil, errFirestoreClientUnavailable
 	}
+	// Firestore 実装の PostRepository を構築し、失敗時は詳細を返す
+	repo, err := repoFirestore.NewPostRepository(infra.Firestore())
+	if err != nil {
+		return nil, fmt.Errorf("new firestore post repository: %w", err)
+	}
+	return repo, nil
+}
+
+/**
+ * Worker 起動に必須な Firestore 環境変数を検証する。
+ */
+func ensureWorkerFirestoreEnv() error {
+	var missing []string
+	if strings.TrimSpace(os.Getenv("GOOGLE_CLOUD_PROJECT")) == "" {
+		missing = append(missing, "GOOGLE_CLOUD_PROJECT")
+	}
+	if strings.TrimSpace(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")) == "" {
+		missing = append(missing, "GOOGLE_APPLICATION_CREDENTIALS")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("%w: %s を設定してください", errWorkerFirestoreEnvMissing, strings.Join(missing, ", "))
+	}
+	return nil
 }
