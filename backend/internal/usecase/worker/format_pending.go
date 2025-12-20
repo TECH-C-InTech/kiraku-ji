@@ -18,6 +18,7 @@ var (
 	ErrPostNotFound         = errors.New("format_pending: 投稿が存在しません")
 	ErrFormatterUnavailable = errors.New("format_pending: 整形サービスに接続できません")
 	ErrContentRejected      = errors.New("format_pending: 投稿内容が拒否されました")
+	ErrDrawCreationFailed   = errors.New("format_pending: おみくじ結果を保存できませんでした")
 	ErrNilUsecase           = errors.New("format_pending: ユースケースが初期化されていません")
 	ErrNilContext           = errors.New("format_pending: コンテキストが指定されていません")
 )
@@ -98,7 +99,7 @@ func (u *FormatPendingUsecase) Execute(ctx context.Context, postID string) error
 		drawEntity.MarkVerified()
 	}
 	if err := u.drawRepo.Create(ctx, drawEntity); err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrDrawCreationFailed, err)
 	}
 
 	// 公開待ちへの状態遷移に失敗した場合は元エラーも保持しつつ整形待ちではないとみなす
