@@ -1,4 +1,4 @@
-import { API_BASE_URL, getApiErrorMessage } from "./api";
+import { API_BASE_URL, getApiErrorMessage, getNetworkErrorMessage } from "./api";
 
 export type CreatePostRequest = {
   post_id: string;
@@ -22,14 +22,20 @@ export const createPost = async (content: string) => {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 10_000);
 
-  const response = await fetch(`${API_BASE_URL}/posts`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: controller.signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    window.clearTimeout(timeoutId);
+    throw new Error(getNetworkErrorMessage(error));
+  }
 
   window.clearTimeout(timeoutId);
 

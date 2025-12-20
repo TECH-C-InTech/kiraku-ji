@@ -1,4 +1,4 @@
-import { API_BASE_URL, getApiErrorMessage } from "./api";
+import { API_BASE_URL, getApiErrorMessage, getNetworkErrorMessage } from "./api";
 
 export type DrawResponse = {
   post_id: string;
@@ -10,7 +10,12 @@ export type DrawResponse = {
  * 検証済みのおみくじをランダムに取得する。
  */
 export const fetchRandomDraw = async (): Promise<DrawResponse> => {
-  const response = await fetch(`${API_BASE_URL}/draws/random`);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/draws/random`);
+  } catch (error) {
+    throw new Error(getNetworkErrorMessage(error));
+  }
 
   if (!response.ok) {
     const errorMessage = await getApiErrorMessage(

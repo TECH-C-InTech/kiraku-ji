@@ -7,6 +7,9 @@ import { createPost } from "../lib/posts";
 
 type Step = "input" | "loading" | "result" | "error";
 
+/**
+ * 入力から結果表示までの画面を描画する。
+ */
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>("input");
   const [content, setContent] = useState("");
@@ -15,7 +18,19 @@ export default function Home() {
   const contentLength = content.length;
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
+  /**
+   * UI 表示用のエラーメッセージを返す。
+   */
+  const getErrorMessage = (error: unknown) => {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return "通信に失敗しました。しばらく待って再試行してください";
+  };
 
+  /**
+   * 投稿とおみくじ取得をまとめて実行する。
+   */
   const handleSubmit = async () => {
     if (isSubmitDisabled) {
       return;
@@ -30,9 +45,7 @@ export default function Home() {
       setResultText(draw.result);
       setCurrentStep("result");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "通信に失敗しました";
-      setErrorMessage(message);
+      setErrorMessage(getErrorMessage(error));
       setCurrentStep("error");
     }
   };

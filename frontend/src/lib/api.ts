@@ -40,3 +40,20 @@ export const getApiErrorMessage = async (
   }
   return defaultMessage;
 };
+
+/**
+ * 通信失敗時の表示文言を整える。
+ */
+export const getNetworkErrorMessage = (
+  error: unknown,
+  fallbackMessage = "通信に失敗しました。しばらく待って再試行してください",
+): string => {
+  const isAbortError =
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error instanceof Error &&
+      (error.name === "AbortError" || error.message.includes("aborted")));
+  if (isAbortError) {
+    return "通信がタイムアウトしました。しばらく待って再試行してください";
+  }
+  return fallbackMessage;
+};
