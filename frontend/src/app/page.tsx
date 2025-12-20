@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState<"input" | "loading" | "result">(
-    "input",
-  );
+  const [currentStep, setCurrentStep] = useState<
+    "input" | "loading" | "result"
+  >("input");
 
   useEffect(() => {
     if (currentStep !== "loading") {
@@ -38,7 +38,7 @@ export default function Home() {
               placeholder="ここに闇を投げる（最大140字）"
             />
             <button
-              className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white"
+              className="rounded-full bg-zinc-900 px-6 py-3 font-semibold text-sm text-white"
               type="button"
               onClick={() => setCurrentStep("loading")}
             >
@@ -49,7 +49,7 @@ export default function Home() {
 
         {currentStep === "loading" && (
           <section className="flex flex-col items-center gap-4 text-center">
-            <p className="text-base font-medium">
+            <p className="font-medium text-base">
               少し待っていて、あなたのためのお告げを探すから。
             </p>
             <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-100">
@@ -60,11 +60,11 @@ export default function Home() {
 
         {currentStep === "result" && (
           <section className="flex flex-col gap-4 text-center">
-            <p className="text-base font-medium">
+            <p className="font-medium text-base">
               今日の闇みくじ: ここに結果テキストが入ります。
             </p>
             <button
-              className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-semibold text-zinc-700"
+              className="rounded-full border border-zinc-300 px-6 py-3 font-semibold text-sm text-zinc-700"
               type="button"
               onClick={() => setCurrentStep("input")}
             >
