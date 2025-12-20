@@ -127,6 +127,7 @@ func (u *FormatPendingUsecase) Execute(ctx context.Context, postID string) error
 func normalizeDrawContent(content drawdomain.FormattedContent) drawdomain.FormattedContent {
 	trimmed := strings.TrimSpace(string(content))
 	runes := []rune(trimmed)
+	// LLM からの長文も 400 文字（全角換算）で切り詰める
 	if len(runes) > maxDrawResultLength {
 		trimmed = string(runes[:maxDrawResultLength])
 	}
@@ -141,6 +142,7 @@ func (u *FormatPendingUsecase) requeueFormatJob(ctx context.Context, postID post
 }
 
 func (u *FormatPendingUsecase) rollbackPostToPending(ctx context.Context, p *post.Post) error {
+	// ready へ進めた投稿を pending に戻し、再整形を可能にする
 	pending, err := post.Restore(p.ID(), p.Content(), post.StatusPending)
 	if err != nil {
 		return err
