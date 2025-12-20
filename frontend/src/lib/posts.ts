@@ -1,13 +1,6 @@
-import { getApiErrorMessage, normalizeApiBaseUrl } from "./api";
-
-export type CreatePostRequest = {
-  post_id: string;
-  content: string;
-};
-
-export type CreatePostResponse = {
-  post_id: string;
-};
+import type { CreatePostRequest, CreatePostResponse } from "@/types/api";
+import { getApiErrorMessage } from "@/utils/api";
+import { getApiBaseUrl, normalizeApiBaseUrl } from "./api";
 
 /**
  * 闇投稿を登録する。
