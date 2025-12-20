@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./api";
+import { getApiBaseUrl } from "./api";
 
 export type DrawResponse = {
   post_id: string;
@@ -14,7 +14,7 @@ type ApiErrorResponse = {
  * 検証済みのおみくじをランダムに取得する。
  */
 export const fetchRandomDraw = async (): Promise<DrawResponse> => {
-  const response = await fetch(`${API_BASE_URL}/draws/random`);
+  const response = await fetch(`${getApiBaseUrl()}/draws/random`);
 
   if (!response.ok) {
     let errorMessage = "おみくじの取得に失敗しました";

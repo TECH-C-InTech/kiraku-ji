@@ -1,4 +1,4 @@
-import { API_BASE_URL, getApiErrorMessage } from "./api";
+import { getApiBaseUrl, getApiErrorMessage } from "./api";
 
 export type CreatePostRequest = {
   post_id: string;
@@ -22,7 +22,7 @@ export const createPost = async (content: string) => {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 10_000);
 
-  const response = await fetch(`${API_BASE_URL}/posts`, {
+  const response = await fetch(`${getApiBaseUrl()}/posts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
