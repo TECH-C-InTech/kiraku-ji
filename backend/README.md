@@ -201,9 +201,9 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 
 | 変数名 | 役割 |
 | --- | --- |
-| `GOOGLE_CLOUD_PROJECT` | Firestore を利用する GCP プロジェクト ID（必須） |
-| `GOOGLE_APPLICATION_CREDENTIALS` | 本番・Staging などで用いるサービスアカウント JSON のパス（エミュレータ利用時は不要） |
-| `FIRESTORE_EMULATOR_HOST` | Firestore Emulator を利用する場合のホスト名（例: `localhost:8080`） |
+| `GOOGLE_CLOUD_PROJECT` | Firestore を利用する GCP / Firebase プロジェクト ID（必須） |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Firestore へ接続するサービスアカウント JSON のパス（必須） |
+| `FIRESTORE_EMULATOR_HOST` | Firestore Emulator を利用する場合のホスト名（Worker など開発用） |
 | `WORKER_POST_REPOSITORY` | `firestore` を指定するとワーカーが Firestore PostRepository を利用（未設定時はメモリ実装） |
 | `GEMINI_API_KEY` | Gemini formatter を使用する際の API キー |
 | `GEMINI_MODEL` | 利用する Gemini モデル名（未設定時は `gemini-2.5-flash`） |
@@ -212,26 +212,34 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `OPENAI_BASE_URL` | OpenAI 互換エンドポイントを使う場合の Base URL（通常は空で OK） |
 | `LLM_PROVIDER` | `openai` / `gemini` を指定して使用する LLM を切り替え（未設定時は `openai`） |
 
-`GOOGLE_CLOUD_PROJECT` が未設定の場合は Firestore クライアントは初期化されません（メモリ実装のみで動作）。
+`GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` が未設定の場合、Infra の初期化が失敗し API / Worker は起動しません。
 
-### ローカル開発（Firestore Emulator）
+### API を Firestore へ接続する（エミュレータ非対応）
 
-1. Firestore Emulator を起動  
-   `gcloud beta emulators firestore start --host-port=localhost:8080`
-2. 別ターミナルで環境変数をエクスポート  
+1. Firebase もしくは GCP で Firestore を有効化し、API から投稿を書き込むプロジェクト ID を決める。
+2. 対象プロジェクトでサービスアカウント（Cloud Datastore User 権限以上）を作成し、JSON キーをダウンロードする。
+3. JSON キーはリポジトリ外もしくは `.gitignore` に含まれるパス（例: `backend/service-account.json`）へ保存する。
+4. `.env` またはシェルに以下を設定する。
    ```bash
-   export GOOGLE_CLOUD_PROJECT=dark-fortune-dev
-   export FIRESTORE_EMULATOR_HOST=localhost:8080
+   GOOGLE_CLOUD_PROJECT=your-project-id
+   GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
    ```
-3. 必要に応じて API / Worker を起動  
-   `go run ./cmd/api`
+5. API を起動する。
+   ```bash
+   cd backend
+   go run ./cmd/api
+   ```
+   必須環境変数が欠けている場合は起動時にエラーで停止する。
+6. 別ターミナルから投稿を作り、Firestore `posts` コレクションに反映されることを確認する。
+   ```bash
+   curl -i -X POST http://localhost:8080/posts \
+     -H "Content-Type: application/json" \
+     -d '{"post_id":"post-123","content":"闇の投稿です"}'
+   ```
 
-### 本番・リモート環境
+> API は Firestore Emulator をサポートしていません。常に本番と同じ Firestore（サービスアカウント JSON 経由）へ接続してください。
 
-1. Firestore を利用するプロジェクト ID を `GOOGLE_CLOUD_PROJECT` に設定。
-2. 対象サービスアカウント JSON のパスを `GOOGLE_APPLICATION_CREDENTIALS` に設定。
-3. `FIRESTORE_EMULATOR_HOST` は未設定（実サービス接続）。
-4. `go run ./cmd/api` もしくはビルド済みバイナリを実行。
+ワーカーも同じ Firestore を共有します。整形処理も Firestore を読む場合は上記と同じ環境変数を設定し、`WORKER_POST_REPOSITORY=firestore` を指定して起動してください。
 
 ### コレクションスキーマ
 

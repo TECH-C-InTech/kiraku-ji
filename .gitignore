@@ -40,3 +40,5 @@ pnpm-debug.log*
 
 # Go coverage artifacts
 backend/cover.out
+
+backend/service-account.json

@@ -14,6 +14,7 @@ import (
 	"backend/internal/port/repository"
 	drawusecase "backend/internal/usecase/draw"
 	postusecase "backend/internal/usecase/post"
+	"cloud.google.com/go/firestore"
 )
 
 // Container は API で使用する依存を保持する。
@@ -40,7 +41,11 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	usecase := drawusecase.NewFortuneUsecase(repo)
 	drawHandler := handler.NewDrawHandler(usecase)
 
-	postRepo := memoryrepo.NewInMemoryPostRepository()
+	// API では Firestore へ統一するため、メモリ実装へは切り替えない
+	postRepo, err := newAPIPostRepository(infra)
+	if err != nil {
+		return nil, fmt.Errorf("init post repository: %w", err)
+	}
 	// 投稿整形キューは JOB_QUEUE_BACKEND の指定に応じて実装を切り替える
 	jobQueue, _, err := jobQueueFactory(infra)
 	if err != nil {
@@ -64,6 +69,29 @@ func (c *Container) Close() error {
 		return nil
 	}
 	return c.Infra.Close()
+}
+
+var (
+	errFirestoreClientUnavailable = errors.New("post repository: Firestore クライアントが初期化されていません")
+	apiPostRepositoryFactory      = func(client *firestore.Client) (repository.PostRepository, error) {
+		return firestoreadapter.NewPostRepository(client)
+	}
+)
+
+/**
+ * API 用に Firestore 固定の投稿リポジトリを構築する。
+ */
+func newAPIPostRepository(infra *Infra) (repository.PostRepository, error) {
+	client := infra.Firestore()
+	if client == nil {
+		return nil, errFirestoreClientUnavailable
+	}
+	// PostRepository も Firestore で統一し、クライアント生成失敗を上位へ伝播させる
+	repo, err := apiPostRepositoryFactory(client)
+	if err != nil {
+		return nil, fmt.Errorf("new firestore post repository: %w", err)
+	}
+	return repo, nil
 }
 
 func provideDrawRepository(ctx context.Context, infra *Infra) (repository.DrawRepository, error) {
