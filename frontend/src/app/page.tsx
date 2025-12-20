@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+type Step = "input" | "loading" | "result";
+
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState<
-    "input" | "loading" | "result"
-  >("input");
+  const [currentStep, setCurrentStep] = useState<Step>("input");
 
   useEffect(() => {
     if (currentStep !== "loading") {
@@ -23,18 +23,15 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans text-zinc-900">
-      <main className="flex w-full max-w-2xl flex-col gap-8 rounded-3xl bg-white px-10 py-16 shadow-xl">
-        <div className="flex flex-col gap-2 text-center">
-          <h1 className="font-semibold text-2xl tracking-tight">
-            闇おみくじ（ステート骨格）
-          </h1>
-          <p className="text-sm text-zinc-500">入力 → 演出 → 結果</p>
-        </div>
+      <main className="flex w-full max-w-xl flex-col gap-8 rounded-3xl bg-white px-8 py-12 shadow-lg">
+        <header className="text-center">
+          <h1 className="font-semibold text-xl">きらくじ（仮UI）</h1>
+        </header>
 
         {currentStep === "input" && (
           <section className="flex flex-col gap-4">
             <textarea
-              className="min-h-[120px] w-full resize-none rounded-2xl border border-zinc-200 px-4 py-3 text-sm outline-none"
+              className="min-h-[140px] w-full resize-none rounded-2xl border border-zinc-200 px-4 py-3 text-sm outline-none"
               placeholder="ここに闇を投げる（最大140字）"
             />
             <button
@@ -48,20 +45,18 @@ export default function Home() {
         )}
 
         {currentStep === "loading" && (
-          <section className="flex flex-col items-center gap-4 text-center">
+          <section className="flex flex-col items-center gap-3 text-center">
             <p className="font-medium text-base">
               少し待っていて、あなたのためのお告げを探すから。
             </p>
-            <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-100">
-              <div className="h-full w-1/3 animate-pulse rounded-full bg-zinc-800" />
-            </div>
+            <p className="text-sm text-zinc-500">きらくじを引いています...</p>
           </section>
         )}
 
         {currentStep === "result" && (
           <section className="flex flex-col gap-4 text-center">
             <p className="font-medium text-base">
-              今日の闇みくじ: ここに結果テキストが入ります。
+              今日のきらくじ: ここに結果テキストが入ります。
             </p>
             <button
               className="rounded-full border border-zinc-300 px-6 py-3 font-semibold text-sm text-zinc-700"
