@@ -53,14 +53,19 @@ resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-resource "google_project_iam_member" "github_actions_service_account_user" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.github_actions.email}"
+# GitHub ActionsがCloud Runサービスアカウントとして動作できるように、
+# サービスアカウントレベルでserviceAccountUserロールを付与
+# （プロジェクトレベルではなく、特定のサービスアカウントに限定）
+resource "google_service_account_iam_member" "github_actions_can_act_as_cloudrun" {
+  service_account_id = "projects/${var.project_id}/serviceAccounts/cloudrun@${var.project_id}.iam.gserviceaccount.com"
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-resource "google_project_iam_member" "github_actions_storage_admin" {
-  project = var.project_id
-  role    = "roles/storage.admin"
-  member  = "serviceAccount:${google_service_account.github_actions.email}"
+# Terraform state管理用のGCSバケットへのアクセス権限
+# プロジェクト全体ではなく、特定のバケットに限定
+resource "google_storage_bucket_iam_member" "github_actions_terraform_state" {
+  bucket = "kiraku-ji-terraform-state"
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.github_actions.email}"
 }

@@ -54,10 +54,6 @@ jobs:
           AQUA_GITHUB_TOKEN: ${{ github.token }}
           AQUA_DISABLE_SLSA: true
 
-      - uses: suzuki-shunsuke/tfaction/export-secrets@v1.20.1
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
       - uses: suzuki-shunsuke/tfaction/get-target-config@v1.20.1
         id: target-config
 
