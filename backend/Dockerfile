@@ -14,6 +14,9 @@ COPY . .
 # APIバイナリをビルド
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api ./cmd/api
 
+# Workerバイナリをビルド
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/worker ./cmd/worker
+
 # Runtime stage
 FROM alpine:3.23
 
@@ -28,6 +31,7 @@ RUN addgroup -g 1000 appuser && \
 
 # ビルダーからバイナリをコピー
 COPY --from=builder --chown=appuser:appuser /app/api .
+COPY --from=builder --chown=appuser:appuser /app/worker .
 
 # 非rootユーザーに切り替え
 USER appuser
