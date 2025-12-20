@@ -29,7 +29,7 @@ func TestFormatPendingUsecase_Success(t *testing.T) {
 			FormattedContent: "formatted",
 		},
 	}
-	usecase := NewFormatPendingUsecase(repo, formatter, testutil.StubJobQueue{})
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, formatter, testutil.StubJobQueue{})
 
 	if err := usecase.Execute(context.Background(), "post-1"); err != nil {
 		t.Fatalf("execute returned error: %v", err)
@@ -44,7 +44,7 @@ func TestFormatPendingUsecase_Success(t *testing.T) {
 
 func TestFormatPendingUsecase_PostNotFound(t *testing.T) {
 	repo := testutil.NewStubPostRepository(nil)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{}, testutil.StubJobQueue{})
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{}, testutil.StubJobQueue{})
 
 	err := usecase.Execute(context.Background(), "unknown")
 	if !errors.Is(err, ErrPostNotFound) {
@@ -55,7 +55,7 @@ func TestFormatPendingUsecase_PostNotFound(t *testing.T) {
 func TestFormatPendingUsecase_GetGenericError(t *testing.T) {
 	repo := testutil.NewStubPostRepository(nil)
 	repo.GetErr = errors.New("get failed")
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{}, testutil.StubJobQueue{})
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{}, testutil.StubJobQueue{})
 
 	err := usecase.Execute(context.Background(), "post-1")
 	if !errors.Is(err, repo.GetErr) {
@@ -66,7 +66,7 @@ func TestFormatPendingUsecase_GetGenericError(t *testing.T) {
 func TestFormatPendingUsecase_FormatterUnavailable(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := testutil.NewStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatErr: llm.ErrFormatterUnavailable,
 	}, testutil.StubJobQueue{})
 
@@ -79,7 +79,7 @@ func TestFormatPendingUsecase_FormatterUnavailable(t *testing.T) {
 func TestFormatPendingUsecase_ContentRejected(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := testutil.NewStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateErr:  llm.ErrContentRejected,
 	}, testutil.StubJobQueue{})
@@ -97,7 +97,7 @@ func TestFormatPendingUsecase_UpdateFailed(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := testutil.NewStubPostRepository(p)
 	repo.UpdateErr = errors.New("update failed")
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateResult: &llm.FormatResult{
 			DarkPostID:       p.ID(),
@@ -118,7 +118,7 @@ func TestFormatPendingUsecase_PostNotPending(t *testing.T) {
 		t.Fatalf("failed to mark ready: %v", err)
 	}
 	repo := testutil.NewStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateResult: &llm.FormatResult{
 			DarkPostID:       p.ID(),
@@ -134,7 +134,7 @@ func TestFormatPendingUsecase_PostNotPending(t *testing.T) {
 }
 
 func TestFormatPendingUsecase_EmptyPostID(t *testing.T) {
-	usecase := NewFormatPendingUsecase(testutil.NewStubPostRepository(nil), &testutil.StubFormatter{}, testutil.StubJobQueue{})
+	usecase := NewFormatPendingUsecase(testutil.NewStubPostRepository(nil), testutil.StubDrawRepository{}, &testutil.StubFormatter{}, testutil.StubJobQueue{})
 	if err := usecase.Execute(context.Background(), ""); !errors.Is(err, ErrEmptyPostID) {
 		t.Fatalf("expected ErrEmptyPostID, got %v", err)
 	}
@@ -150,7 +150,7 @@ func TestFormatPendingUsecase_NilUsecase(t *testing.T) {
 func TestFormatPendingUsecase_ValidationNotVerified(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := testutil.NewStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateResult: &llm.FormatResult{
 			DarkPostID:       p.ID(),
@@ -168,7 +168,7 @@ func TestFormatPendingUsecase_ValidationNotVerified(t *testing.T) {
 }
 
 func TestFormatPendingUsecase_NilContext(t *testing.T) {
-	usecase := NewFormatPendingUsecase(testutil.NewStubPostRepository(nil), &testutil.StubFormatter{}, testutil.StubJobQueue{})
+	usecase := NewFormatPendingUsecase(testutil.NewStubPostRepository(nil), testutil.StubDrawRepository{}, &testutil.StubFormatter{}, testutil.StubJobQueue{})
 
 	var nilCtx context.Context
 	if err := usecase.Execute(nilCtx, "post-1"); !errors.Is(err, ErrNilContext) {
@@ -180,7 +180,7 @@ func TestFormatPendingUsecase_FormatGenericError(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := testutil.NewStubPostRepository(p)
 	expectedErr := errors.New("format failed")
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatErr: expectedErr,
 	}, testutil.StubJobQueue{})
 
@@ -194,7 +194,7 @@ func TestFormatPendingUsecase_ValidateGenericError(t *testing.T) {
 	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
 	repo := testutil.NewStubPostRepository(p)
 	expectedErr := errors.New("validate failed")
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubFormatter{
+	usecase := NewFormatPendingUsecase(repo, testutil.StubDrawRepository{}, &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateErr:  expectedErr,
 	}, testutil.StubJobQueue{})

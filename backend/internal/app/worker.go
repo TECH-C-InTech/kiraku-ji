@@ -22,6 +22,7 @@ import (
 type WorkerContainer struct {
 	Infra                *Infra
 	PostRepo             repository.PostRepository
+	DrawRepo             repository.DrawRepository
 	JobQueue             queue.JobQueue
 	Formatter            llm.Formatter
 	FormatPendingUsecase *worker.FormatPendingUsecase
@@ -52,6 +53,7 @@ var formatterFactory = func(ctx context.Context) (llm.Formatter, func() error, e
 	}
 }
 var postRepositoryFactory = newPostRepository
+var drawRepositoryFactory = newDrawRepository
 var infraFactory = NewInfra
 var errWorkerFirestoreEnvMissing = errors.New("worker: Firestore 環境変数が未設定です")
 
@@ -75,6 +77,11 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 		return nil, err
 	}
 
+	drawRepo, err := drawRepositoryFactory(ctx, infra)
+	if err != nil {
+		return nil, fmt.Errorf("init draw repository: %w", err)
+	}
+
 	// ジョブキューは Firestore 固定で共有する
 	jobQueue, err := jobQueueFactory(infra)
 	if err != nil {
@@ -87,11 +94,12 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 		return nil, fmt.Errorf("init formatter: %w", err)
 	}
 
-	usecase := worker.NewFormatPendingUsecase(postRepo, formatter, jobQueue)
+	usecase := worker.NewFormatPendingUsecase(postRepo, drawRepo, formatter, jobQueue)
 
 	container := &WorkerContainer{
 		Infra:                infra,
 		PostRepo:             postRepo,
+		DrawRepo:             drawRepo,
 		JobQueue:             jobQueue,
 		Formatter:            formatter,
 		FormatPendingUsecase: usecase,
@@ -182,6 +190,21 @@ func newPostRepository(ctx context.Context, infra *Infra) (repository.PostReposi
 	repo, err := repoFirestore.NewPostRepository(infra.Firestore())
 	if err != nil {
 		return nil, fmt.Errorf("new firestore post repository: %w", err)
+	}
+	return repo, nil
+}
+
+/**
+ * Firestore 固定の DrawRepository を構築する。
+ */
+func newDrawRepository(ctx context.Context, infra *Infra) (repository.DrawRepository, error) {
+	// DrawRepository も Firestore を利用するためクライアント初期化を必須にする
+	if infra == nil || infra.Firestore() == nil {
+		return nil, errFirestoreClientUnavailable
+	}
+	repo, err := repoFirestore.NewDrawRepository(infra.Firestore())
+	if err != nil {
+		return nil, fmt.Errorf("new firestore draw repository: %w", err)
 	}
 	return repo, nil
 }

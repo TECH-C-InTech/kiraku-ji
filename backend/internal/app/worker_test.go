@@ -9,6 +9,7 @@ import (
 	"google.golang.org/api/option"
 
 	"backend/internal/adapter/llm/gemini"
+	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
 	"backend/internal/port/llm"
 	"backend/internal/port/queue"
@@ -33,6 +34,9 @@ func TestNewWorkerContainer_UsesFirestoreRepository(t *testing.T) {
 	}
 	defer func() { postRepositoryFactory = origRepoFactory }()
 
+	stubDrawRepo := &workerStubDrawRepository{}
+	defer stubDrawRepositoryFactory(t, stubDrawRepo, nil)()
+
 	origInfraFactory := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
 		return &Infra{}, nil
@@ -45,6 +49,9 @@ func TestNewWorkerContainer_UsesFirestoreRepository(t *testing.T) {
 	}
 	if container.PostRepo != stubRepo {
 		t.Fatalf("expected stub repository to be used")
+	}
+	if container.DrawRepo != stubDrawRepo {
+		t.Fatalf("expected draw repository stub to be used")
 	}
 	if err := container.Close(); err != nil {
 		t.Fatalf("close returned error: %v", err)
@@ -96,9 +103,33 @@ func TestNewWorkerContainer_PostRepoError(t *testing.T) {
 	}
 }
 
+func TestNewWorkerContainer_DrawRepoError(t *testing.T) {
+	setRequiredFirestoreEnv(t)
+
+	origInfra := infraFactory
+	infraFactory = func(ctx context.Context) (*Infra, error) {
+		return &Infra{}, nil
+	}
+	defer func() { infraFactory = origInfra }()
+
+	origRepoFactory := postRepositoryFactory
+	postRepositoryFactory = func(ctx context.Context, infra *Infra) (repository.PostRepository, error) {
+		return &workerStubPostRepository{}, nil
+	}
+	defer func() { postRepositoryFactory = origRepoFactory }()
+
+	drawErr := errors.New("draw repo error")
+	defer stubDrawRepositoryFactory(t, nil, drawErr)()
+
+	if _, err := NewWorkerContainer(context.Background()); err == nil || !errors.Is(err, drawErr) {
+		t.Fatalf("expected draw repository error, got %v", err)
+	}
+}
+
 func TestNewWorkerContainer_FormatterFactoryError(t *testing.T) {
 	setRequiredFirestoreEnv(t)
 	defer stubJobQueueFactory(t)()
+	defer stubDrawRepositoryFactory(t, &workerStubDrawRepository{}, nil)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -129,6 +160,7 @@ func TestNewWorkerContainer_MissingGeminiConfig(t *testing.T) {
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("GEMINI_MODEL", "")
 	defer stubJobQueueFactory(t)()
+	defer stubDrawRepositoryFactory(t, &workerStubDrawRepository{}, nil)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -171,6 +203,7 @@ func TestNewWorkerContainer_FirestoreEnvMissing(t *testing.T) {
 
 func TestNewWorkerContainer_JobQueueFactoryError(t *testing.T) {
 	setRequiredFirestoreEnv(t)
+	defer stubDrawRepositoryFactory(t, &workerStubDrawRepository{}, nil)()
 
 	origInfra := infraFactory
 	infraFactory = func(ctx context.Context) (*Infra, error) {
@@ -205,6 +238,19 @@ func TestNewPostRepository_FirestoreSuccess(t *testing.T) {
 	infra := &Infra{firestoreClient: &firestore.Client{}}
 	if _, err := newPostRepository(context.Background(), infra); err != nil {
 		t.Fatalf("expected firestore repo, got error: %v", err)
+	}
+}
+
+func TestNewDrawRepository_FirestoreRequiresClient(t *testing.T) {
+	if _, err := newDrawRepository(context.Background(), &Infra{}); err == nil {
+		t.Fatalf("expected error when firestore client is missing")
+	}
+}
+
+func TestNewDrawRepository_FirestoreSuccess(t *testing.T) {
+	infra := &Infra{firestoreClient: &firestore.Client{}}
+	if _, err := newDrawRepository(context.Background(), infra); err != nil {
+		t.Fatalf("expected firestore draw repo, got error: %v", err)
 	}
 }
 
@@ -309,6 +355,18 @@ func stubJobQueueFactory(t *testing.T) func() {
 	return func() { jobQueueFactory = orig }
 }
 
+func stubDrawRepositoryFactory(t *testing.T, repo repository.DrawRepository, retErr error) func() {
+	t.Helper()
+	orig := drawRepositoryFactory
+	drawRepositoryFactory = func(ctx context.Context, infra *Infra) (repository.DrawRepository, error) {
+		if retErr != nil {
+			return nil, retErr
+		}
+		return repo, nil
+	}
+	return func() { drawRepositoryFactory = orig }
+}
+
 type stubFormatter struct {
 	closeErr error
 	closed   bool
@@ -365,6 +423,7 @@ func (noopJobQueue) Close() error {
 var _ llm.Formatter = (*stubFormatter)(nil)
 var _ queue.JobQueue = (*stubJobQueue)(nil)
 var _ repository.PostRepository = (*workerStubPostRepository)(nil)
+var _ repository.DrawRepository = (*workerStubDrawRepository)(nil)
 
 type workerStubPostRepository struct{}
 
@@ -382,4 +441,18 @@ func (workerStubPostRepository) ListReady(ctx context.Context, limit int) ([]*po
 
 func (workerStubPostRepository) Update(ctx context.Context, p *post.Post) error {
 	return repository.ErrPostNotFound
+}
+
+type workerStubDrawRepository struct{}
+
+func (workerStubDrawRepository) Create(ctx context.Context, d *drawdomain.Draw) error {
+	return nil
+}
+
+func (workerStubDrawRepository) GetByPostID(ctx context.Context, postID post.DarkPostID) (*drawdomain.Draw, error) {
+	return nil, repository.ErrDrawNotFound
+}
+
+func (workerStubDrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, error) {
+	return nil, nil
 }

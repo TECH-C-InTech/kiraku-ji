@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 
+	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
 	"backend/internal/port/llm"
 	"backend/internal/port/queue"
@@ -68,6 +69,32 @@ func (r *StubPostRepository) Update(ctx context.Context, p *post.Post) error {
 }
 
 var _ repository.PostRepository = (*StubPostRepository)(nil)
+
+// DrawRepository を埋めるだけの簡易スタブ。
+type StubDrawRepository struct{}
+
+/**
+ * Create 呼び出しを無視する。
+ */
+func (StubDrawRepository) Create(ctx context.Context, d *drawdomain.Draw) error {
+	return nil
+}
+
+/**
+ * GetByPostID は既定で見つからない扱いにする。
+ */
+func (StubDrawRepository) GetByPostID(ctx context.Context, postID post.DarkPostID) (*drawdomain.Draw, error) {
+	return nil, repository.ErrDrawNotFound
+}
+
+/**
+ * ListReady は空を返す。
+ */
+func (StubDrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, error) {
+	return nil, nil
+}
+
+var _ repository.DrawRepository = (*StubDrawRepository)(nil)
 
 // 整形と検証の結果を切り替えられるテスト用スタブ。
 type StubFormatter struct {

@@ -25,6 +25,7 @@ var (
 // 整形待ち投稿の整形から公開準備までを担う。
 type FormatPendingUsecase struct {
 	postRepo repository.PostRepository
+	drawRepo repository.DrawRepository
 	llm      llm.Formatter
 	jobQueue queue.JobQueue // TODO: 再整形の再キュー処理で利用予定
 }
@@ -32,11 +33,13 @@ type FormatPendingUsecase struct {
 // 依存をまとめて整形用ユースケースを組み立てる。
 func NewFormatPendingUsecase(
 	postRepo repository.PostRepository,
+	drawRepo repository.DrawRepository,
 	llmFormatter llm.Formatter,
 	jobQueue queue.JobQueue,
 ) *FormatPendingUsecase {
 	return &FormatPendingUsecase{
 		postRepo: postRepo,
+		drawRepo: drawRepo,
 		llm:      llmFormatter,
 		jobQueue: jobQueue,
 	}
