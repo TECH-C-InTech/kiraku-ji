@@ -155,6 +155,20 @@ func TestNewWorkerContainer_SeedEnqueueError(t *testing.T) {
 	_ = container.Close()
 }
 
+func TestNewWorkerContainer_JobQueueFactoryError(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "dummy")
+	t.Setenv("GEMINI_MODEL", "dummy")
+	origFactory := jobQueueFactory
+	jobQueueFactory = func(infra *Infra) (queue.JobQueue, bool, error) {
+		return nil, false, errors.New("job queue error")
+	}
+	defer func() { jobQueueFactory = origFactory }()
+
+	if _, err := NewWorkerContainer(context.Background()); err == nil {
+		t.Fatalf("expected error when job queue factory fails")
+	}
+}
+
 func TestNewPostRepository_FirestoreRequiresClient(t *testing.T) {
 	t.Setenv("WORKER_POST_REPOSITORY", "firestore")
 	if _, _, err := newPostRepository(context.Background(), &Infra{}); err == nil {
@@ -222,9 +236,6 @@ func TestWorkerContainerClose_ReturnsFirstError(t *testing.T) {
 	}
 	if !formatter.closed {
 		t.Fatalf("formatter close was not invoked")
-	}
-	if !queueStub.closed {
-		t.Fatalf("queue close was not invoked")
 	}
 	if !queueStub.closed {
 		t.Fatalf("queue close was not invoked")

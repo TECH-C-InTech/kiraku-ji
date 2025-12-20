@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"backend/internal/adapter/http/handler"
-	queueMemory "backend/internal/adapter/queue/memory"
 	firestoreadapter "backend/internal/adapter/repository/firestore"
 	memoryrepo "backend/internal/adapter/repository/memory"
 	drawdomain "backend/internal/domain/draw"
@@ -42,7 +41,11 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	drawHandler := handler.NewDrawHandler(usecase)
 
 	postRepo := memoryrepo.NewInMemoryPostRepository()
-	jobQueue := queueMemory.NewInMemoryJobQueue(10)
+	// 投稿整形キューは JOB_QUEUE_BACKEND の指定に応じて実装を切り替える
+	jobQueue, _, err := jobQueueFactory(infra)
+	if err != nil {
+		return nil, fmt.Errorf("init job queue: %w", err)
+	}
 	createPostUsecase := postusecase.NewCreatePostUsecase(postRepo, jobQueue)
 	postHandler := handler.NewPostHandler(createPostUsecase)
 

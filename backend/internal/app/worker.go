@@ -9,7 +9,6 @@ import (
 
 	"backend/internal/adapter/llm/gemini"
 	openaiFormatter "backend/internal/adapter/llm/openai"
-	queueMemory "backend/internal/adapter/queue/memory"
 	repoFirestore "backend/internal/adapter/repository/firestore"
 	repoMemory "backend/internal/adapter/repository/memory"
 	"backend/internal/config"
@@ -82,15 +81,20 @@ func NewWorkerContainer(ctx context.Context) (*WorkerContainer, error) {
 		}
 	}
 
-	jobQueue := queueMemory.NewInMemoryJobQueue(10)
+	// ジョブキューは JOB_QUEUE_BACKEND で選択し、メモリ時は起動直後 enqueue のため seed フラグを受け取る
+	jobQueue, seedMemoryQueue, err := jobQueueFactory(infra)
+	if err != nil {
+		return nil, fmt.Errorf("init job queue: %w", err)
+	}
 
+	// どの LLM プロバイダを使うかは formatterFactory が環境変数から判断する
 	formatter, closeFormatter, err := formatterFactory(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("init formatter: %w", err)
 	}
 
 	// サンプル投稿があれば起動直後に処理させる
-	if initialID != "" {
+	if initialID != "" && seedMemoryQueue {
 		if err := jobQueue.EnqueueFormat(ctx, initialID); err != nil {
 			log.Printf("seed enqueue failed: %v", err)
 		}
