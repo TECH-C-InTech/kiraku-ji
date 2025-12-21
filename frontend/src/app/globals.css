@@ -121,6 +121,8 @@ body {
   .kirakuji-progress {
     animation: none;
   }
+}
+
 .omikuji-text {
   font-family: var(--font-omikuji);
   line-height: 1.8;

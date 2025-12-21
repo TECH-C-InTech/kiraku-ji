@@ -24,9 +24,8 @@ export default function KirakujiTransitionOverlay({
   } as CSSProperties;
 
   return (
-    <div
+    <output
       className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-50 px-4 py-8 font-sans text-zinc-900"
-      role="status"
       aria-live="polite"
       aria-busy="true"
       style={animationStyle}
@@ -72,6 +71,6 @@ export default function KirakujiTransitionOverlay({
         </div>
         <p className="text-sm text-zinc-500">{subMessage}</p>
       </div>
-    </div>
+    </output>
   );
 }
