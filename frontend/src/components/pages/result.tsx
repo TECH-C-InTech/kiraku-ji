@@ -71,11 +71,11 @@ export default function FortuneResultPage({
         <ResultCard
           resultText={resultText}
           onRetry={() => router.push("/")}
-          buttonLabel="Try again"
-          buttonClassName="border-zinc-200 text-zinc-100"
+          buttonLabel="もう一度懺悔する"
+          buttonClassName="border-zinc-200 text-zinc-100 omikuji-font"
           secondaryButtonLabel="闇を押し付ける"
           onSecondary={handleShare}
-          secondaryButtonClassName="border-zinc-200 text-zinc-100"
+          secondaryButtonClassName="border-zinc-200 text-zinc-100 omikuji-font"
           reverseButtons
         />
       </main>

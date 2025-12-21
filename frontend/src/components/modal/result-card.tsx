@@ -22,8 +22,8 @@ export default function ResultCard({
   secondaryButtonClassName = "border-zinc-300 text-zinc-700",
   reverseButtons = false,
 }: ResultCardProps) {
-  const mergedButtonClassName = `rounded-none border px-4 py-2 font-semibold text-sm ${buttonClassName}`;
-  const mergedSecondaryButtonClassName = `rounded-none border px-4 py-2 font-semibold text-sm ${secondaryButtonClassName}`;
+  const mergedButtonClassName = `rounded-none bg-transparent px-4 py-2 font-semibold text-sm ${buttonClassName}`;
+  const mergedSecondaryButtonClassName = `rounded-none bg-transparent px-4 py-2 font-semibold text-sm ${secondaryButtonClassName}`;
   const hasSecondaryButton =
     typeof onSecondary === "function" && Boolean(secondaryButtonLabel);
   const actionContainerClassName = hasSecondaryButton

@@ -128,3 +128,15 @@ body {
   line-height: 1.8;
   letter-spacing: 0.02em;
 }
+
+.omikuji-font {
+  font-family: var(--font-omikuji);
+}
+
+.hand-underline {
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='24'%20height='8'%20viewBox='0%200%2024%208'%3E%3Cpath%20d='M0%206%20L4%205%20L8%206%20L12%204%20L16%206%20L20%205%20L24%206'%20fill='none'%20stroke='%23ffffff'%20stroke-width='2'%20stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center 100%;
+  background-size: 100% 8px;
+  padding-bottom: 6px;
+}
