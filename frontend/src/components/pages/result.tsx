@@ -43,14 +43,14 @@ export default function FortuneResultPage({
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-8 font-sans text-zinc-900 md:px-0">
-      <main className="relative flex w-full max-w-lg flex-col gap-8 rounded-xl bg-zinc-900 px-6 py-10 text-center shadow-lg md:max-w-xl md:px-8 md:py-12">
+    <div className="flex min-h-screen items-start justify-center bg-zinc-50 px-4 pt-[60vh] pb-10 font-sans text-zinc-900 md:px-0">
+      <main className="relative flex w-full max-w-lg flex-col gap-8 rounded-none bg-zinc-900 px-6 py-10 text-center shadow-lg md:max-w-xl md:px-8 md:py-12">
         <ResultCard
           resultText={resultText}
           onRetry={() => router.push("/")}
           buttonLabel="Try again"
           buttonClassName="border-zinc-200 text-zinc-100"
-          secondaryButtonLabel="Share"
+          secondaryButtonLabel="闇を押し付ける"
           onSecondary={handleShare}
           secondaryButtonClassName="border-zinc-200 text-zinc-100"
           reverseButtons
