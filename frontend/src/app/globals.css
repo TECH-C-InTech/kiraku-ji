@@ -39,8 +39,8 @@ body {
 }
 
 .kirakuji-ring {
-  animation: kirakuji-ring var(--kirakuji-transition-duration, 1600ms)
-    ease-out 1;
+  animation: kirakuji-ring var(--kirakuji-transition-duration, 1600ms) ease-out
+    1;
   animation-fill-mode: forwards;
 }
 

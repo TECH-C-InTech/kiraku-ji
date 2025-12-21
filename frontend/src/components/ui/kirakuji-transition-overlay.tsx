@@ -1,7 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import Image from "next/image";
+import type { CSSProperties } from "react";
 
 type KirakujiTransitionOverlayProps = {
   message?: string;
@@ -45,7 +45,7 @@ export default function KirakujiTransitionOverlay({
             alt=""
             width={240}
             height={240}
-            className="relative w-[200px] kirakuji-float md:w-[240px]"
+            className="kirakuji-float relative w-[200px] md:w-[240px]"
             priority
           />
           <Image
@@ -53,7 +53,7 @@ export default function KirakujiTransitionOverlay({
             alt=""
             width={240}
             height={240}
-            className="absolute -z-10 w-[200px] opacity-15 kirakuji-shadow md:w-[240px]"
+            className="-z-10 kirakuji-shadow absolute w-[200px] opacity-15 md:w-[240px]"
             aria-hidden="true"
           />
         </div>
@@ -63,7 +63,7 @@ export default function KirakujiTransitionOverlay({
           role="progressbar"
           aria-label="画面を切り替えています"
         >
-          <div className="h-full rounded-full bg-zinc-700 kirakuji-progress" />
+          <div className="kirakuji-progress h-full rounded-full bg-zinc-700" />
         </div>
         <p className="text-sm text-zinc-500">{subMessage}</p>
       </div>
