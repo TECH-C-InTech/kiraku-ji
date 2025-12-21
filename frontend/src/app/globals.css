@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "ArmedLemon";
+  src: url("/ArmedLemon.TTF") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-omikuji:
+    "ArmedLemon", "Hiragino Mincho ProN", "Yu Mincho",
+    "Hiragino Kaku Gothic ProN", "Meiryo", serif;
 }
 
 @theme inline {
@@ -112,4 +121,8 @@ body {
   .kirakuji-progress {
     animation: none;
   }
+.omikuji-text {
+  font-family: var(--font-omikuji);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
 }
