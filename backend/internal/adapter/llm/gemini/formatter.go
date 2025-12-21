@@ -17,7 +17,7 @@ import (
 const (
 	defaultModelName      = "gemini-2.5-flash"
 	maxFormattedLength    = 150
-	minFormattedLength    = 120
+	minFormattedLength    = 30
 	fortunePrefix         = "今日のきらくじ:"
 	expectedSentenceCount = 3
 )
@@ -175,7 +175,7 @@ func buildPrompt(content string) string {
 あなたは他人の闇投稿をもとに、別の人が引く「きらくじ」を作る占い師です。出力は日本語のみで行い、次の指示を厳守してください。
 
 【文章ルール】
-1. 合計 120〜150 文字の 3 文構成で書く。
+1. 合計 30〜150 文字の 3 文構成で書く。
 2. 各文の内容: (1) 今の状況は少し重めに捉える (2) 賢明な行動は具体的で粘り強く、ねちねちした現実的な対処 (3) 結末は少しユーモアを含めつつ、癒しになるような余韻を残す。
 3. 3 文すべて「〜ます。」で終え、句点（。）で区切る。
 4. 固有名詞・URL・箇条書き・顔文字は禁止
