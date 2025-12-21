@@ -236,25 +236,24 @@ export default function HomePage() {
           }}
         >
           <main
-            className="relative flex w-[90%] max-w-md flex-col gap-4 rounded-xl p-4 shadow-lg md:max-w-lg md:p-6 bg-[#d6adc8]"
+            className="relative flex w-[90%] max-w-md flex-col gap-4 rounded-xl bg-[#d6adc8] p-4 shadow-lg md:max-w-lg md:p-6"
             ref={modalRef}
             onPointerDown={(event) => event.stopPropagation()}
           >
-
             {(currentStep === "input" ||
               (currentStep === "loading" && loadingOrigin === "input")) && (
               <section className="flex flex-col gap-4">
-                  <textarea
-                    className="min-h-30 w-full rounded-md resize-none bg-white px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-zinc-50"
-                    maxLength={140}
-                    placeholder="ねむれないこと"
-                    value={content}
-                    onChange={handleContentChange}
-                    ref={inputRef}
-                    disabled={currentStep === "loading"}
-                  />
+                <textarea
+                  className="min-h-30 w-full resize-none rounded-md bg-white px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-zinc-50"
+                  maxLength={140}
+                  placeholder="ねむれないこと"
+                  value={content}
+                  onChange={handleContentChange}
+                  ref={inputRef}
+                  disabled={currentStep === "loading"}
+                />
                 <button
-                  className="mx-auto px-6 py-2 font-semibold rounded-md bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mx-auto rounded-md bg-white px-6 py-2 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitButtonDisabled}
