@@ -46,7 +46,7 @@ export default function ResultCard({
 
   return (
     <section className="flex flex-col items-center gap-6 text-center">
-      <div className="relative w-full rounded-none bg-zinc-900 px-5 py-4">
+      <div className="relative w-full rounded-xl bg-zinc-900 px-5 py-4">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full text-zinc-500"
           viewBox="0 0 100 100"
@@ -58,8 +58,8 @@ export default function ResultCard({
             y="1"
             width="98"
             height="98"
-            rx="0"
-            ry="0"
+            rx="4"
+            ry="4"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
