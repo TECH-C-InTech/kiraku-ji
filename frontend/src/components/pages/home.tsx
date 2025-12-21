@@ -70,6 +70,8 @@ export default function HomePage() {
   const welcomeMessage =
     "ようこそ、きらくじへ。自分の闇を差し出すと、おみくじが引けます。";
   const [welcomeLine, welcomeLineNext] = splitMessage(welcomeMessage, 16);
+  const inputMessage = "闇をここに書いてね。";
+  const [inputLine, inputLineNext] = splitMessage(inputMessage, 16);
   const contentLength = content.length;
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
@@ -324,11 +326,25 @@ export default function HomePage() {
           >
             {(currentStep === "input" ||
               (currentStep === "loading" && loadingOrigin === "input")) && (
-              <section className="flex flex-col gap-4">
+              <section className="relative flex flex-col gap-4 text-center">
+                <div className="-top-48 -translate-x-1/2 absolute left-1/2 w-full max-w-xs border border-zinc-900/10 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm">
+                  <span className="sr-only">{inputMessage}</span>
+                  <span aria-hidden="true" className="kirakuji-typing-line">
+                    {inputLine}
+                  </span>
+                  {inputLineNext && (
+                    <span
+                      aria-hidden="true"
+                      className="kirakuji-typing-line is-second"
+                    >
+                      {inputLineNext}
+                    </span>
+                  )}
+                </div>
                 <textarea
                   className="min-h-30 w-full resize-none rounded-md bg-white px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-zinc-50"
                   maxLength={140}
-                  placeholder="ねむれないこと"
+                  placeholder="今夜の闇をひとこと"
                   value={content}
                   onChange={handleContentChange}
                   ref={inputRef}
