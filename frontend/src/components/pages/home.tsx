@@ -199,9 +199,30 @@ export default function HomePage() {
   }, [handleRetry, isModalOpen]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-8 font-sans text-zinc-900 md:px-0">
-      <div className="flex w-full max-w-xl flex-col items-center gap-4">
-        <h1 className="font-semibold text-xl">きらくじ（仮UI）</h1>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-50 px-0 py-0 font-sans text-zinc-900 md:px-0">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 flex justify-center opacity-70">
+        <div className="w-full md:max-w-xl">
+          <Image
+            src="/curtain.png"
+            alt=""
+            width={1440}
+            height={480}
+            className="h-auto w-full object-top"
+            priority
+          />
+        </div>
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-10">
+        <Image
+          src="/pome_illust_normal.png"
+          alt="闇を投げるイラスト"
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+        />
+      </div>
+      <div className="-translate-y-[10px] relative z-20 flex w-full max-w-xl flex-col items-center gap-4 px-4 md:px-0">
         <button
           className="rounded-3xl p-2 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-900 focus-visible:outline-offset-4"
           type="button"
