@@ -17,6 +17,38 @@ import { createPost } from "@/lib/posts";
 
 type Step = "input" | "loading" | "ready" | "error";
 
+/** 表示文を指定の長さで2行に分割する。 */
+const splitMessage = (message: string, maxChars: number) => {
+  const normalized = message.trim();
+  if (normalized.length <= maxChars) {
+    return [normalized];
+  }
+
+  const breakChars = ["、", "。", " ", "　"];
+  let breakIndex = -1;
+
+  for (const char of breakChars) {
+    const index = normalized.lastIndexOf(char, maxChars);
+    if (index === -1) {
+      continue;
+    }
+    breakIndex = Math.max(breakIndex, index + 1);
+  }
+
+  if (breakIndex <= 0) {
+    breakIndex = Math.min(maxChars, normalized.length);
+  }
+
+  const firstLine = normalized.slice(0, breakIndex).trimEnd();
+  const secondLine = normalized.slice(breakIndex).trimStart();
+
+  if (secondLine.length === 0) {
+    return [firstLine];
+  }
+
+  return [firstLine, secondLine];
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,6 +67,11 @@ export default function HomePage() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const defaultPostError = "投稿に失敗しました";
   const defaultDrawError = "おみくじの取得に失敗しました";
+  const welcomeMessage =
+    "ようこそ、きらくじへ。自分の闇を差し出すと、おみくじが引けます。";
+  const [welcomeLine, welcomeLineNext] = splitMessage(welcomeMessage, 16);
+  const inputMessage = "闇をここに書いてね。";
+  const [inputLine, inputLineNext] = splitMessage(inputMessage, 16);
   const contentLength = content.length;
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
@@ -227,6 +264,22 @@ export default function HomePage() {
         />
       </div>
       <div className="-translate-y-[10px] relative z-20 flex w-full max-w-xl flex-col items-center gap-4 px-4 md:px-0">
+        {!isModalOpen && (
+          <div className="-top-48 -translate-x-1/2 pointer-events-none absolute left-1/2 w-full max-w-xs border border-zinc-900/10 bg-white px-4 py-3 text-center text-sm text-zinc-900 shadow-sm">
+            <span className="sr-only">{welcomeMessage}</span>
+            <span aria-hidden="true" className="kirakuji-typing-line">
+              {welcomeLine}
+            </span>
+            {welcomeLineNext && (
+              <span
+                aria-hidden="true"
+                className="kirakuji-typing-line is-second"
+              >
+                {welcomeLineNext}
+              </span>
+            )}
+          </div>
+        )}
         <button
           className="rounded-3xl p-2 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-900 focus-visible:outline-offset-4"
           type="button"
@@ -271,11 +324,25 @@ export default function HomePage() {
           >
             {(currentStep === "input" ||
               (currentStep === "loading" && loadingOrigin === "input")) && (
-              <section className="flex flex-col gap-4">
+              <section className="relative flex flex-col gap-4 text-center">
+                <div className="-top-48 -translate-x-1/2 absolute left-1/2 w-full max-w-xs border border-zinc-900/10 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm">
+                  <span className="sr-only">{inputMessage}</span>
+                  <span aria-hidden="true" className="kirakuji-typing-line">
+                    {inputLine}
+                  </span>
+                  {inputLineNext && (
+                    <span
+                      aria-hidden="true"
+                      className="kirakuji-typing-line is-second"
+                    >
+                      {inputLineNext}
+                    </span>
+                  )}
+                </div>
                 <textarea
                   className="min-h-30 w-full resize-none rounded-md bg-white px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-zinc-50"
                   maxLength={140}
-                  placeholder="ねむれないこと"
+                  placeholder="今夜の闇をひとこと"
                   value={content}
                   onChange={handleContentChange}
                   ref={inputRef}
