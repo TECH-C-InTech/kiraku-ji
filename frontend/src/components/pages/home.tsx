@@ -39,6 +39,10 @@ export default function HomePage() {
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
   const isSubmitButtonDisabled = isSubmitDisabled || currentStep === "loading";
+  const modalClassName =
+    currentStep === "ready"
+      ? "relative flex w-[90%] max-w-md flex-col gap-4 text-center md:max-w-lg"
+      : "relative flex w-[90%] max-w-md flex-col gap-4 rounded-xl bg-[#d6adc8] p-4 shadow-lg md:max-w-lg md:p-6";
 
   /** 遷移アニメーションの表示を開始する。 */
   const startTransition = () => {
@@ -234,15 +238,19 @@ export default function HomePage() {
             handleRetry({ clearContent: true });
           }}
         >
-          <Image
-            src="/hurt_normal.png"
-            alt=""
-            width={220}
-            height={220}
-            className="h-auto w-[200px] md:w-[220px]"
-            priority
-          />
-          <span className="sr-only">闇を投げる</span>
+          {currentStep !== "ready" && (
+            <>
+              <Image
+                src="/hurt_normal.png"
+                alt=""
+                width={220}
+                height={220}
+                className="kirakuji-idle h-auto w-[200px] md:w-[220px]"
+                priority
+              />
+              <span className="sr-only">闇を投げる</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -257,7 +265,7 @@ export default function HomePage() {
           }}
         >
           <main
-            className="relative flex w-[90%] max-w-md flex-col gap-4 rounded-xl bg-[#d6adc8] p-4 shadow-lg md:max-w-lg md:p-6"
+            className={modalClassName}
             ref={modalRef}
             onPointerDown={(event) => event.stopPropagation()}
           >
@@ -285,10 +293,21 @@ export default function HomePage() {
             )}
 
             {currentStep === "ready" && (
-              <section className="flex flex-col gap-4 text-center">
-                <p className="font-medium text-base">
-                  お告げを捧げました。きらくじを受け取りますか？
-                </p>
+              <section className="relative flex flex-col gap-4 text-center">
+                <div className="-top-48 -translate-x-1/2 absolute left-1/2 w-full max-w-xs border border-zinc-900/10 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm">
+                  <span className="sr-only">
+                    きらくじを受け取る準備ができました。きらくじを受け取りますか？
+                  </span>
+                  <span aria-hidden="true" className="kirakuji-typing-line">
+                    きらくじを受け取る準備ができました。
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="kirakuji-typing-line is-second"
+                  >
+                    きらくじを受け取りますか？
+                  </span>
+                </div>
                 <button
                   className="mx-auto rounded-3xl p-2 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-900 focus-visible:outline-offset-4"
                   type="button"
@@ -301,7 +320,7 @@ export default function HomePage() {
                     alt=""
                     width={200}
                     height={200}
-                    className="h-auto w-[180px] md:w-[200px]"
+                    className="kirakuji-reveal -translate-y-2 h-auto w-[200px] md:w-[220px]"
                   />
                   <span className="sr-only">闇を引く</span>
                 </button>

@@ -60,6 +60,36 @@ body {
   width: 0%;
 }
 
+.kirakuji-talk {
+  animation: kirakuji-talk 1400ms ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.kirakuji-typing-line {
+  display: block;
+  width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: kirakuji-typing 1200ms steps(16, end) forwards;
+  border-right: 2px solid rgba(24, 24, 27, 0.6);
+}
+
+.kirakuji-typing-line.is-second {
+  animation-delay: 1200ms;
+}
+
+.kirakuji-idle {
+  animation: kirakuji-idle 4200ms ease-in-out infinite;
+  transform-origin: center;
+}
+
+.kirakuji-reveal {
+  animation: kirakuji-reveal 1400ms ease-in-out 2400ms infinite;
+  transform-origin: center;
+  opacity: 1;
+}
+
 @keyframes kirakuji-float {
   0% {
     transform: translateY(6px) rotate(-6deg) scale(0.97);
@@ -114,11 +144,78 @@ body {
   }
 }
 
+@keyframes kirakuji-talk {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-4px) scale(1.02);
+  }
+  70% {
+    transform: translateY(1px) scale(0.99);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes kirakuji-typing {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes kirakuji-idle {
+  0% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  13% {
+    transform: translateY(5px) rotate(2deg);
+  }
+  27% {
+    transform: translateY(-2px) rotate(-0.5deg);
+  }
+  46% {
+    transform: translateY(7px) rotate(1.2deg);
+  }
+  63% {
+    transform: translateY(-4px) rotate(-2.2deg);
+  }
+  81% {
+    transform: translateY(3px) rotate(1.6deg);
+  }
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+}
+
+@keyframes kirakuji-reveal {
+  0% {
+    transform: translateY(-2px) scale(0.99);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-10px) scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-2px) scale(0.99);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kirakuji-float,
   .kirakuji-shadow,
   .kirakuji-ring,
-  .kirakuji-progress {
+  .kirakuji-progress,
+  .kirakuji-talk,
+  .kirakuji-typing-line,
+  .kirakuji-reveal,
+  .kirakuji-idle {
     animation: none;
   }
 }
