@@ -9,6 +9,9 @@ import {
   useRef,
   useState,
 } from "react";
+import KirakujiTransitionOverlay, {
+  KIRAKUJI_TRANSITION_MS,
+} from "@/components/ui/kirakuji-transition-overlay";
 import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
 
@@ -23,6 +26,10 @@ export default function HomePage() {
   );
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionStartedAtRef = useRef<number | null>(null);
+  const transitionPromiseRef = useRef<Promise<void> | null>(null);
+  const transitionResolveRef = useRef<(() => void) | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -32,6 +39,48 @@ export default function HomePage() {
   const trimmedLength = content.trim().length;
   const isSubmitDisabled = trimmedLength === 0 || contentLength > 140;
   const isSubmitButtonDisabled = isSubmitDisabled || currentStep === "loading";
+
+  /** 遷移アニメーションの表示を開始する。 */
+  const startTransition = () => {
+    transitionStartedAtRef.current = Date.now();
+    transitionPromiseRef.current = new Promise((resolve) => {
+      transitionResolveRef.current = resolve;
+    });
+    setIsTransitioning(true);
+  };
+
+  /** 遷移アニメーションを停止して状態を戻す。 */
+  const stopTransition = () => {
+    transitionStartedAtRef.current = null;
+    transitionPromiseRef.current = null;
+    transitionResolveRef.current = null;
+    setIsTransitioning(false);
+  };
+
+  /** 遷移アニメーションの完了を通知する。 */
+  const completeTransition = () => {
+    transitionResolveRef.current?.();
+    transitionResolveRef.current = null;
+  };
+
+  /** 最低表示時間を満たすまで待機する。 */
+  const waitForTransition = async () => {
+    const startedAt = transitionStartedAtRef.current ?? Date.now();
+    const elapsed = Date.now() - startedAt;
+    const remaining = Math.max(0, KIRAKUJI_TRANSITION_MS - elapsed);
+    const timerPromise =
+      remaining > 0
+        ? new Promise((resolve) => {
+            window.setTimeout(resolve, remaining);
+          })
+        : Promise.resolve();
+    await Promise.race([
+      transitionPromiseRef.current ?? Promise.resolve(),
+      timerPromise,
+    ]);
+    transitionPromiseRef.current = null;
+    transitionResolveRef.current = null;
+  };
 
   const handleContentChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setContent(event.target.value);
@@ -69,15 +118,17 @@ export default function HomePage() {
   };
 
   const handleDraw = async () => {
-    if (currentStep !== "ready") {
+    if (currentStep !== "ready" || isTransitioning) {
       return;
     }
     setLoadingOrigin("ready");
     setCurrentStep("loading");
     setErrorMessage("");
+    startTransition();
     try {
       const draw = await fetchRandomDraw();
       const query = new URLSearchParams({ text: draw.result });
+      await waitForTransition();
       setIsModalOpen(false);
       handleRetry({ clearContent: true });
       router.push(`/result?${query.toString()}`);
@@ -87,6 +138,7 @@ export default function HomePage() {
       );
       setLoadingOrigin(null);
       setCurrentStep("error");
+      stopTransition();
     }
   };
 
@@ -233,28 +285,6 @@ export default function HomePage() {
               </section>
             )}
 
-            {currentStep === "loading" && loadingOrigin === "ready" && (
-              <section className="flex flex-col items-center gap-4 text-center">
-                <div className="flex h-40 w-40 items-center justify-center rounded-full border border-zinc-300 bg-zinc-100 text-xs text-zinc-500">
-                  黒グラキャラ（仮）
-                </div>
-                <p className="font-medium text-base">
-                  少し待っていて、あなたのためのお告げを探すから。
-                </p>
-                <div
-                  className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-200"
-                  role="progressbar"
-                  aria-busy="true"
-                  aria-label="きらくじを引いています"
-                >
-                  <div className="h-full w-1/3 animate-pulse rounded-full bg-zinc-700" />
-                </div>
-                <p className="text-sm text-zinc-500">
-                  きらくじを引いています...
-                </p>
-              </section>
-            )}
-
             {currentStep === "ready" && (
               <section className="flex flex-col gap-4 text-center">
                 <p className="font-medium text-base">
@@ -295,6 +325,9 @@ export default function HomePage() {
             )}
           </main>
         </div>
+      )}
+      {isTransitioning && (
+        <KirakujiTransitionOverlay onAnimationComplete={completeTransition} />
       )}
     </div>
   );

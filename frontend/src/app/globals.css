@@ -34,6 +34,95 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.kirakuji-float {
+  animation: kirakuji-float var(--kirakuji-transition-duration, 1600ms)
+    ease-in-out 1;
+  animation-fill-mode: forwards;
+}
+
+.kirakuji-shadow {
+  animation: kirakuji-shadow var(--kirakuji-transition-duration, 1600ms)
+    ease-in-out 1;
+  animation-fill-mode: forwards;
+  filter: blur(12px);
+}
+
+.kirakuji-ring {
+  animation: kirakuji-ring var(--kirakuji-transition-duration, 1600ms) ease-out
+    1;
+  animation-fill-mode: forwards;
+}
+
+.kirakuji-progress {
+  animation: kirakuji-progress var(--kirakuji-transition-duration, 1600ms)
+    ease-in-out 1;
+  animation-fill-mode: forwards;
+  width: 0%;
+}
+
+@keyframes kirakuji-float {
+  0% {
+    transform: translateY(6px) rotate(-6deg) scale(0.97);
+  }
+  50% {
+    transform: translateY(-8px) rotate(6deg) scale(1.03);
+  }
+  100% {
+    transform: translateY(6px) rotate(-6deg) scale(0.97);
+  }
+}
+
+@keyframes kirakuji-shadow {
+  0% {
+    transform: translateY(14px) scale(0.98);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translateY(22px) scale(0.9);
+    opacity: 0.08;
+  }
+  100% {
+    transform: translateY(14px) scale(0.98);
+    opacity: 0.18;
+  }
+}
+
+@keyframes kirakuji-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+  70% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes kirakuji-progress {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 55%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kirakuji-float,
+  .kirakuji-shadow,
+  .kirakuji-ring,
+  .kirakuji-progress {
+    animation: none;
+  }
+}
+
 .omikuji-text {
   font-family: var(--font-omikuji);
   line-height: 1.8;
