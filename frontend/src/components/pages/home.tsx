@@ -161,7 +161,6 @@ export default function HomePage() {
         </div>
       </div>
       <div className="relative z-20 flex w-full max-w-xl flex-col items-center gap-4">
-        <h1 className="font-semibold text-xl">きらくじ（仮UI）</h1>
         <button
           className="rounded-3xl p-2 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-900 focus-visible:outline-offset-4"
           type="button"
