@@ -28,6 +28,8 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionStartedAtRef = useRef<number | null>(null);
+  const transitionPromiseRef = useRef<Promise<void> | null>(null);
+  const transitionResolveRef = useRef<(() => void) | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -41,25 +43,43 @@ export default function HomePage() {
   /** 遷移アニメーションの表示を開始する。 */
   const startTransition = () => {
     transitionStartedAtRef.current = Date.now();
+    transitionPromiseRef.current = new Promise((resolve) => {
+      transitionResolveRef.current = resolve;
+    });
     setIsTransitioning(true);
   };
 
   /** 遷移アニメーションを停止して状態を戻す。 */
   const stopTransition = () => {
     transitionStartedAtRef.current = null;
+    transitionPromiseRef.current = null;
+    transitionResolveRef.current = null;
     setIsTransitioning(false);
+  };
+
+  /** 遷移アニメーションの完了を通知する。 */
+  const completeTransition = () => {
+    transitionResolveRef.current?.();
+    transitionResolveRef.current = null;
   };
 
   /** 最低表示時間を満たすまで待機する。 */
   const waitForTransition = async () => {
     const startedAt = transitionStartedAtRef.current ?? Date.now();
     const elapsed = Date.now() - startedAt;
-    const remaining = KIRAKUJI_TRANSITION_MS - elapsed;
-    if (remaining > 0) {
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, remaining);
-      });
-    }
+    const remaining = Math.max(0, KIRAKUJI_TRANSITION_MS - elapsed);
+    const timerPromise =
+      remaining > 0
+        ? new Promise((resolve) => {
+            window.setTimeout(resolve, remaining);
+          })
+        : Promise.resolve();
+    await Promise.race([
+      transitionPromiseRef.current ?? Promise.resolve(),
+      timerPromise,
+    ]);
+    transitionPromiseRef.current = null;
+    transitionResolveRef.current = null;
   };
 
   const handleContentChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -295,7 +315,11 @@ export default function HomePage() {
           </main>
         </div>
       )}
-      {isTransitioning && <KirakujiTransitionOverlay />}
+      {isTransitioning && (
+        <KirakujiTransitionOverlay
+          onAnimationComplete={completeTransition}
+        />
+      )}
     </div>
   );
 }

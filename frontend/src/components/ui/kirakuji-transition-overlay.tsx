@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 type KirakujiTransitionOverlayProps = {
   message?: string;
   subMessage?: string;
+  onAnimationComplete?: () => void;
 };
 
 export const KIRAKUJI_TRANSITION_MS = 1600;
@@ -16,6 +17,7 @@ export const KIRAKUJI_TRANSITION_MS = 1600;
 export default function KirakujiTransitionOverlay({
   message = "少し待ってて!あなたのためのお告げを探すから。",
   subMessage = "きらくじを引いています...",
+  onAnimationComplete,
 }: KirakujiTransitionOverlayProps) {
   const animationStyle = {
     "--kirakuji-transition-duration": `${KIRAKUJI_TRANSITION_MS}ms`,
@@ -63,7 +65,10 @@ export default function KirakujiTransitionOverlay({
           role="progressbar"
           aria-label="画面を切り替えています"
         >
-          <div className="kirakuji-progress h-full rounded-full bg-zinc-700" />
+          <div
+            className="kirakuji-progress h-full rounded-full bg-zinc-700"
+            onAnimationEnd={onAnimationComplete}
+          />
         </div>
         <p className="text-sm text-zinc-500">{subMessage}</p>
       </div>
