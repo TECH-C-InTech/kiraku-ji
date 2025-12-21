@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import ResultCard from "@/components/modal/result-card";
 
@@ -43,16 +44,38 @@ export default function FortuneResultPage({
   };
 
   return (
-    <div className="flex min-h-screen items-start justify-center bg-zinc-50 px-4 pt-[60vh] pb-10 font-sans text-zinc-900 md:px-0">
-      <main className="relative flex w-full max-w-lg flex-col gap-8 rounded-none bg-zinc-900 px-6 py-10 text-center shadow-lg md:max-w-xl md:px-8 md:py-12">
+    <div className="relative flex min-h-screen items-start justify-center overflow-hidden bg-zinc-50 px-4 pt-[60vh] pb-10 font-sans text-zinc-900 md:px-0">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 flex justify-center opacity-70">
+        <div className="w-full md:max-w-xl">
+          <Image
+            src="/curtain.png"
+            alt=""
+            width={1440}
+            height={480}
+            className="h-auto w-full object-top"
+            priority
+          />
+        </div>
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-10">
+        <Image
+          src="/black-1.png"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+        />
+      </div>
+      <main className="relative z-20 flex w-full max-w-lg flex-col gap-8 rounded-none bg-zinc-900 px-6 py-10 text-center shadow-lg md:max-w-xl md:px-8 md:py-12">
         <ResultCard
           resultText={resultText}
           onRetry={() => router.push("/")}
-          buttonLabel="Try again"
-          buttonClassName="border-zinc-200 text-zinc-100"
+          buttonLabel="もう一度懺悔する"
+          buttonClassName="border-zinc-200 text-zinc-100 omikuji-font"
           secondaryButtonLabel="闇を押し付ける"
           onSecondary={handleShare}
-          secondaryButtonClassName="border-zinc-200 text-zinc-100"
+          secondaryButtonClassName="border-zinc-200 text-zinc-100 omikuji-font"
           reverseButtons
         />
       </main>

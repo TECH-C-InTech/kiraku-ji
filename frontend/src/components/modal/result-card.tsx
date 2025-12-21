@@ -22,8 +22,8 @@ export default function ResultCard({
   secondaryButtonClassName = "border-zinc-300 text-zinc-700",
   reverseButtons = false,
 }: ResultCardProps) {
-  const mergedButtonClassName = `rounded-none border px-4 py-2 font-semibold text-sm ${buttonClassName}`;
-  const mergedSecondaryButtonClassName = `rounded-none border px-4 py-2 font-semibold text-sm ${secondaryButtonClassName}`;
+  const mergedButtonClassName = `rounded-none bg-transparent px-4 py-2 font-semibold text-sm ${buttonClassName}`;
+  const mergedSecondaryButtonClassName = `rounded-none bg-transparent px-4 py-2 font-semibold text-sm ${secondaryButtonClassName}`;
   const hasSecondaryButton =
     typeof onSecondary === "function" && Boolean(secondaryButtonLabel);
   const actionContainerClassName = hasSecondaryButton
@@ -46,7 +46,7 @@ export default function ResultCard({
 
   return (
     <section className="flex flex-col items-center gap-6 text-center">
-      <div className="relative w-full rounded-none bg-zinc-900 px-5 py-4">
+      <div className="relative w-full rounded-xl bg-zinc-900 px-5 py-4">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full text-zinc-500"
           viewBox="0 0 100 100"
@@ -58,8 +58,8 @@ export default function ResultCard({
             y="1"
             width="98"
             height="98"
-            rx="0"
-            ry="0"
+            rx="4"
+            ry="4"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
