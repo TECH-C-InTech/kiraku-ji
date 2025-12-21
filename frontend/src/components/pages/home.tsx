@@ -227,7 +227,7 @@ export default function HomePage() {
 
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
           role="dialog"
           aria-modal="true"
           onPointerDown={() => {
@@ -236,40 +236,29 @@ export default function HomePage() {
           }}
         >
           <main
-            className="relative flex w-full max-w-lg flex-col gap-8 rounded-3xl bg-white px-6 py-10 shadow-lg md:max-w-xl md:px-8 md:py-12"
+            className="relative flex w-[90%] max-w-md flex-col gap-4 rounded-xl bg-[#d6adc8] p-4 shadow-lg md:max-w-lg md:p-6"
             ref={modalRef}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <button
-              className="absolute top-4 right-4 rounded-full bg-zinc-100 px-3 py-1 font-semibold text-xs text-zinc-600 hover:bg-zinc-200"
-              type="button"
-              onClick={() => {
-                setIsModalOpen(false);
-                handleRetry();
-              }}
-            >
-              閉じる
-            </button>
-
             {(currentStep === "input" ||
               (currentStep === "loading" && loadingOrigin === "input")) && (
               <section className="flex flex-col gap-4">
                 <textarea
-                  className="min-h-[140px] w-full resize-none rounded-2xl border border-zinc-200 px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-zinc-100"
+                  className="min-h-30 w-full resize-none rounded-md bg-white px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-zinc-50"
                   maxLength={140}
-                  placeholder="ここに闇を投げる"
+                  placeholder="ねむれないこと"
                   value={content}
                   onChange={handleContentChange}
                   ref={inputRef}
                   disabled={currentStep === "loading"}
                 />
                 <button
-                  className="rounded-full bg-zinc-900 px-6 py-3 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
+                  className="mx-auto rounded-md bg-white px-6 py-2 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitButtonDisabled}
                 >
-                  懺悔する
+                  <p className="text-lg text-zinc-900">send</p>
                 </button>
               </section>
             )}
