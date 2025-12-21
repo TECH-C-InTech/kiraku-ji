@@ -9,7 +9,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-omikuji: "ArmedLemon", "Hiragino Mincho ProN", "Yu Mincho",
+  --font-omikuji:
+    "ArmedLemon", "Hiragino Mincho ProN", "Yu Mincho",
     "Hiragino Kaku Gothic ProN", "Meiryo", serif;
 }
 
