@@ -14,32 +14,12 @@ export default function FortuneResultPage({
   const router = useRouter();
   const resultText = defaultText;
 
-  /** おみくじ結果を共有し、未対応ならコピーへ切り替える。 */
-  const handleShare = async () => {
-    const shareText = resultText;
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-      }
-    }
-
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        window.alert("共有用のテキストをコピーしました");
-        return;
-      } catch (_error) {
-        window.alert("共有に失敗しました");
-        return;
-      }
-    }
-
-    window.prompt("共有用テキストをコピーしてください。", shareText);
+  /** おみくじ結果をXでシェアする。 */
+  const handleShare = () => {
+    const shareUrl = window.location.origin;
+    const shareText = `#きらくじ\n\n${resultText}\n\n${shareUrl}`;
+    const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+    window.open(tweetUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
