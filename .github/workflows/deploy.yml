@@ -9,11 +9,11 @@ on:
       - '.github/workflows/deploy.yml'
 
 env:
-  PROJECT_ID: kiraku-ji
+  PROJECT_ID: kiraku-ji-6a7a7
   REGION: asia-northeast1
   SERVICE_NAME: kiraku-ji-api
   WORKER_SERVICE_NAME: kiraku-ji-worker
-  WORKER_SERVICE_ACCOUNT: kiraku-ji-api-sa@kiraku-ji.iam.gserviceaccount.com
+  WORKER_SERVICE_ACCOUNT: kiraku-ji-api-sa@kiraku-ji-6a7a7.iam.gserviceaccount.com
   REPOSITORY: kiraku-ji-api
 
 jobs:

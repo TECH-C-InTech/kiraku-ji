@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
@@ -96,22 +97,29 @@ func (r *DrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, err
 	defer iter.Stop()
 
 	var draws []*drawdomain.Draw
+	docCount := 0
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
+			log.Printf("[DrawRepository.ListReady] iterate error: %v", err)
 			return nil, fmt.Errorf("iterate verified draws: %w", err)
 		}
 
+		docCount++
+		log.Printf("[DrawRepository.ListReady] found doc: %s, data: %+v", doc.Ref.ID, doc.Data())
+
 		d, err := restoreDrawFromDoc(doc)
 		if err != nil {
+			log.Printf("[DrawRepository.ListReady] restore error for doc %s: %v", doc.Ref.ID, err)
 			return nil, err
 		}
 		draws = append(draws, d)
 	}
 
+	log.Printf("[DrawRepository.ListReady] total docs found: %d, verified draws: %d", docCount, len(draws))
 	return draws, nil
 }
 
