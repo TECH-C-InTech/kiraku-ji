@@ -148,7 +148,7 @@ export default function HomePage() {
 
   return (
     <div className="relative flex min-h-screen items-end justify-center overflow-hidden bg-zinc-50 px-4 py-8 font-sans text-zinc-900 md:px-0">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center md:top-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center">
         <div className="w-full md:max-w-xl">
           <Image
             src="/curtain.png"
