@@ -222,7 +222,7 @@ export default function HomePage() {
           priority
         />
       </div>
-      <div className="relative z-20 flex w-full max-w-xl -translate-y-[10px] flex-col items-center gap-4 px-4 md:px-0">
+      <div className="-translate-y-[10px] relative z-20 flex w-full max-w-xl flex-col items-center gap-4 px-4 md:px-0">
         <button
           className="rounded-3xl p-2 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-900 focus-visible:outline-offset-4"
           type="button"
