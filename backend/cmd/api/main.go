@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	drawhandler "backend/internal/adapter/http/handler"
@@ -12,20 +13,25 @@ import (
 func main() {
 	config.LoadDotEnv()
 
-	ctx := context.Background()
+	if err := run(context.Background()); err != nil {
+		log.Fatalf("API起動失敗: %v", err)
+	}
+}
+
+func run(ctx context.Context) error {
 	container, err := app.NewContainer(ctx)
 	if err != nil {
-		log.Fatalf("failed to initialize dependencies: %v", err)
+		return fmt.Errorf("依存初期化失敗: %w", err)
 	}
 	defer func() {
 		if closeErr := container.Close(); closeErr != nil {
-			log.Printf("failed to close dependencies: %v", closeErr)
+			log.Printf("依存終了失敗: %v", closeErr)
 		}
 	}()
 
 	router := drawhandler.NewRouter(container.DrawHandler, container.PostHandler)
-
 	if err := router.Run(); err != nil {
-		log.Fatalf("failed to run server: %v", err)
+		return fmt.Errorf("サーバー起動失敗: %w", err)
 	}
+	return nil
 }
