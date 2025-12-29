@@ -109,12 +109,15 @@ type StubFormatter struct {
 	FormatErr      error
 	ValidateResult *llm.FormatResult
 	ValidateErr    error
+	FormatCalls    int
+	ValidateCalls  int
 }
 
 /**
  * 設定された結果かエラーを返す。
  */
 func (f *StubFormatter) Format(ctx context.Context, req *llm.FormatRequest) (*llm.FormatResult, error) {
+	f.FormatCalls++
 	if f.FormatErr != nil {
 		return nil, f.FormatErr
 	}
@@ -125,6 +128,7 @@ func (f *StubFormatter) Format(ctx context.Context, req *llm.FormatRequest) (*ll
  * 設定された結果かエラーを返す。
  */
 func (f *StubFormatter) Validate(ctx context.Context, result *llm.FormatResult) (*llm.FormatResult, error) {
+	f.ValidateCalls++
 	if f.ValidateErr != nil {
 		return nil, f.ValidateErr
 	}

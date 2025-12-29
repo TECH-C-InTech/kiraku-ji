@@ -138,18 +138,36 @@ func TestFormatPendingUsecase_PostNotPending(t *testing.T) {
 		t.Fatalf("failed to mark ready: %v", err)
 	}
 	repo := testutil.NewStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubDrawRepository{}, &testutil.StubFormatter{
+	drawRepo := &testutil.StubDrawRepository{}
+	formatter := &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateResult: &llm.FormatResult{
 			DarkPostID:       p.ID(),
 			Status:           drawdomain.StatusVerified,
 			FormattedContent: "formatted",
 		},
-	}, testutil.StubJobQueue{})
+	}
+	jobQueue := &recordingJobQueue{}
+	usecase := NewFormatPendingUsecase(repo, drawRepo, formatter, jobQueue)
 
 	err := usecase.Execute(context.Background(), "post-1")
 	if !errors.Is(err, ErrPostNotPending) {
 		t.Fatalf("expected ErrPostNotPending, got %v", err)
+	}
+	if formatter.FormatCalls != 0 {
+		t.Fatalf("整形処理が呼ばれてはいけません")
+	}
+	if formatter.ValidateCalls != 0 {
+		t.Fatalf("検証処理が呼ばれてはいけません")
+	}
+	if len(drawRepo.Created) != 0 {
+		t.Fatalf("draw の作成が行われてはいけません")
+	}
+	if len(jobQueue.enqueued) != 0 {
+		t.Fatalf("再キューが行われてはいけません")
+	}
+	if repo.Updated != nil {
+		t.Fatalf("投稿更新が行われてはいけません")
 	}
 }
 
