@@ -194,8 +194,6 @@ cd backend
 go run ./cmd/worker
 ```
 
-`/draws/random` は Firestore の verified draw を参照するため、データが無い場合は `404 Not Found` になります。動作確認は後述の `cmd/seed` を使って初期データを投入してください。
-
 ## Firestore 設定
 
 API / Worker から Firestore を利用する際は、`internal/app` が 1 度だけクライアントを生成し、各コンテナに共有されます。以下の環境変数を設定してください。
@@ -250,18 +248,6 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | `posts/{post_id}` | `post_id` | `content` (string), `status` (`pending`/`ready`), `created_at`, `updated_at` |
 | `draws/{post_id}` | `post_id` (Post と同じ ID) | `result` (string), `status` (`pending`/`verified`/`rejected`), `created_at` |
 
-### 初期データ投入（シード）
-
-`cmd/seed` が Firestore に posts/draws のサンプルデータを投入します。Verified な draw を含む状態が一度で作成されるため、API を Firestore に切り替えた後でもすぐに挙動を確認できます。
-
-```
-cd backend
-export GOOGLE_CLOUD_PROJECT=your-project
-# Firestore Emulator を使う場合は FIRESTORE_EMULATOR_HOST も設定
-go run ./cmd/seed
-```
-
-エミュレータ利用時は `gcloud beta emulators firestore start --host-port=localhost:8080` を別ターミナルで起動してから実行してください。
 
 ## ワーカー起動方法
 
