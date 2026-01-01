@@ -132,24 +132,48 @@ func TestFormatPendingUsecase_UpdateFailed(t *testing.T) {
 	}
 }
 
+/**
+ * 非対象ステータスなら LLM検証 Draw作成 / 再キュー / 投稿更新が一切走らない
+ */
 func TestFormatPendingUsecase_PostNotPending(t *testing.T) {
-	p, _ := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
+	p, err := post.New(post.DarkPostID("post-1"), post.DarkContent("test"))
+	if err != nil {
+		t.Fatalf("投稿生成失敗: %v", err)
+	}
 	if err := p.MarkReady(); err != nil {
-		t.Fatalf("failed to mark ready: %v", err)
+		t.Fatalf("ready化失敗: %v", err)
 	}
 	repo := testutil.NewStubPostRepository(p)
-	usecase := NewFormatPendingUsecase(repo, &testutil.StubDrawRepository{}, &testutil.StubFormatter{
+	drawRepo := &testutil.StubDrawRepository{}
+	formatter := &testutil.StubFormatter{
 		FormatResult: &llm.FormatResult{DarkPostID: p.ID()},
 		ValidateResult: &llm.FormatResult{
 			DarkPostID:       p.ID(),
 			Status:           drawdomain.StatusVerified,
 			FormattedContent: "formatted",
 		},
-	}, testutil.StubJobQueue{})
+	}
+	jobQueue := &recordingJobQueue{}
+	usecase := NewFormatPendingUsecase(repo, drawRepo, formatter, jobQueue)
 
-	err := usecase.Execute(context.Background(), "post-1")
+	err = usecase.Execute(context.Background(), "post-1")
 	if !errors.Is(err, ErrPostNotPending) {
-		t.Fatalf("expected ErrPostNotPending, got %v", err)
+		t.Fatalf("ErrPostNotPending ではない: %v", err)
+	}
+	if formatter.FormatCalls != 0 {
+		t.Fatalf("整形処理が呼ばれてはいけません")
+	}
+	if formatter.ValidateCalls != 0 {
+		t.Fatalf("検証処理が呼ばれてはいけません")
+	}
+	if len(drawRepo.Created) != 0 {
+		t.Fatalf("draw の作成が行われてはいけません")
+	}
+	if len(jobQueue.enqueued) != 0 {
+		t.Fatalf("再キューが行われてはいけません")
+	}
+	if repo.Updated != nil {
+		t.Fatalf("投稿更新が行われてはいけません")
 	}
 }
 

@@ -71,6 +71,11 @@ func (u *FormatPendingUsecase) Execute(ctx context.Context, postID string) error
 		return err
 	}
 
+	// ステータスが pending 以外の場合は即終了
+	if p.Status() != post.StatusPending {
+		return ErrPostNotPending
+	}
+
 	formatResult, err := u.llm.Format(ctx, &llm.FormatRequest{
 		DarkPostID:  p.ID(),
 		DarkContent: p.Content(),
