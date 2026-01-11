@@ -14,40 +14,9 @@ import KirakujiTransitionOverlay, {
 } from "@/components/ui/kirakuji-transition-overlay";
 import { fetchRandomDraw } from "@/lib/draws";
 import { createPost } from "@/lib/posts";
+import { splitMessage } from "@/utils/split-message";
 
 type Step = "input" | "loading" | "ready" | "error";
-
-/** 表示文を指定の長さで2行に分割する。 */
-const splitMessage = (message: string, maxChars: number) => {
-  const normalized = message.trim();
-  if (normalized.length <= maxChars) {
-    return [normalized];
-  }
-
-  const breakChars = ["、", "。", " ", "　"];
-  let breakIndex = -1;
-
-  for (const char of breakChars) {
-    const index = normalized.lastIndexOf(char, maxChars);
-    if (index === -1) {
-      continue;
-    }
-    breakIndex = Math.max(breakIndex, index + 1);
-  }
-
-  if (breakIndex <= 0) {
-    breakIndex = Math.min(maxChars, normalized.length);
-  }
-
-  const firstLine = normalized.slice(0, breakIndex).trimEnd();
-  const secondLine = normalized.slice(breakIndex).trimStart();
-
-  if (secondLine.length === 0) {
-    return [firstLine];
-  }
-
-  return [firstLine, secondLine];
-};
 
 export default function HomePage() {
   const router = useRouter();
