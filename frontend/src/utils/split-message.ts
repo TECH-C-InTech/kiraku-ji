@@ -1,5 +1,5 @@
-/** 
- * 表示文を指定の長さで2行に分割する。 
+/**
+ * 表示文を指定の長さで2行に分割する。
  */
 export const splitMessage = (message: string, maxChars: number) => {
   const normalized = message.trim();
