@@ -21,7 +21,10 @@
       "type": "shell",
       "command": "go run ./cmd/api",
       "options": {
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}/backend",
+        "env": {
+          "PORT": "8081"
+        }
       },
       "isBackground": true,
       "problemMatcher": [],
@@ -36,7 +39,10 @@
       "type": "shell",
       "command": "go run ./cmd/worker",
       "options": {
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}/backend",
+        "env": {
+          "PORT": "8081"
+        }
       },
       "isBackground": true,
       "problemMatcher": [],

@@ -48,7 +48,8 @@ func main() {
 func startHealthServer(ctx context.Context) {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		// API の既定ポートと衝突しないように別ポートを採用する
+		port = "8081"
 	}
 
 	mux := http.NewServeMux()
