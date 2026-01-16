@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	drawhandler "backend/internal/adapter/http/handler"
-	"backend/internal/app"
 	"backend/internal/config"
 )
 
@@ -16,8 +14,8 @@ import (
 func main() {
 	config.LoadDotEnv()
 
-	if err := run(context.Background()); err != nil {
-		log.Fatalf("API起動失敗: %v", err)
+	if err := runFunc(context.Background()); err != nil {
+		fatalf("API起動失敗: %v", err)
 	}
 }
 
@@ -26,20 +24,20 @@ func main() {
  */
 func run(ctx context.Context) error {
 	// 依存関係をまとめて初期化
-	container, err := app.NewContainer(ctx)
+	container, err := newContainer(ctx)
 	if err != nil {
 		return fmt.Errorf("依存初期化失敗: %w", err)
 	}
 
 	// 関数の終了時に依存リソースを閉じる
 	defer func() {
-		if closeErr := container.Close(); closeErr != nil {
+		if closeErr := closeContainer(container); closeErr != nil {
 			log.Printf("依存終了失敗: %v", closeErr)
 		}
 	}()
 
 	// ルーティングを組み立てて、起動
-	router := drawhandler.NewRouter(container.DrawHandler, container.PostHandler)
+	router := newRouter(container.DrawHandler, container.PostHandler)
 	if err := router.Run(); err != nil {
 		return fmt.Errorf("サーバー起動失敗: %w", err)
 	}
