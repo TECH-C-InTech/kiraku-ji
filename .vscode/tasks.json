@@ -21,10 +21,7 @@
       "type": "shell",
       "command": "go run ./cmd/api",
       "options": {
-        "cwd": "${workspaceFolder}/backend",
-        "env": {
-          "PORT": "8081"
-        }
+        "cwd": "${workspaceFolder}/backend"
       },
       "isBackground": true,
       "problemMatcher": [],
