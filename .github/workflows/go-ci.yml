@@ -15,6 +15,8 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      GOLANGCI_LINT_VERSION: v2.7.2
 
     timeout-minutes: 10
     steps:
@@ -34,12 +36,38 @@ jobs:
             exit 1
           fi
 
+      - name: Install golangci-lint
+        run: |
+          set -euo pipefail
+          set -x
+          mkdir -p "$(go env GOPATH)/bin"
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            | sh -s -- -b "$(go env GOPATH)/bin" "${GOLANGCI_LINT_VERSION}"
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7.0.1
-        with:
-          working-directory: backend
-          version: v2.7.2
-          args: --timeout 5m
+        run: |
+          set -euo pipefail
+          set -x
+          echo "lint開始: $(date +%Y-%m-%dT%H:%M:%S%z)"
+          echo "::group::golangci-lint 実行環境"
+          echo "::debug::pwd=$(pwd)"
+          echo "::debug::git rev-parse HEAD=$(git rev-parse HEAD)"
+          echo "::debug::GOEXPERIMENT=$(go env GOEXPERIMENT)"
+          echo "::debug::GOROOT=$(go env GOROOT)"
+          echo "::debug::GOMODCACHE=$(go env GOMODCACHE)"
+          echo "::debug::GOCACHE=$(go env GOCACHE)"
+          golangci-lint --version
+          echo "使用CPU数: $(nproc)"
+          echo "::endgroup::"
+          echo "::group::golangci-lint cache status (before)"
+          golangci-lint cache status || true
+          echo "::endgroup::"
+          echo "::group::golangci-lint run"
+          golangci-lint run --timeout 5m -v --show-stats --print-resources-usage
+          echo "::endgroup::"
+          echo "::group::golangci-lint cache status (after)"
+          golangci-lint cache status || true
+          echo "::endgroup::"
 
       - name: Run tests
         run: go test ./...
