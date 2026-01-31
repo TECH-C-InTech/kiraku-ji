@@ -37,10 +37,19 @@ type jobDocument struct {
 
 // Firestore を永続化に使う整形待ちキュー
 type FirestoreJobQueue struct {
-	client     *firestore.Client
-	collection string
+	store     jobQueueStore
 	closeOnce  sync.Once
 	closedCh   chan struct{}
+}
+
+type jobQueueStore interface {
+	Create(ctx context.Context, id post.DarkPostID) error
+	Dequeue(ctx context.Context) (post.DarkPostID, error)
+}
+
+type firestoreJobQueueStore struct {
+	client     *firestore.Client
+	collection string
 }
 
 /**
@@ -50,11 +59,18 @@ func NewFirestoreJobQueue(client *firestore.Client) (*FirestoreJobQueue, error) 
 	if client == nil {
 		return nil, errMissingClient
 	}
-	return &FirestoreJobQueue{
+	store := &firestoreJobQueueStore{
 		client:     client,
 		collection: formatJobsCollection,
-		closedCh:   make(chan struct{}),
-	}, nil
+	}
+	return newFirestoreJobQueueWithStore(store), nil
+}
+
+func newFirestoreJobQueueWithStore(store jobQueueStore) *FirestoreJobQueue {
+	return &FirestoreJobQueue{
+		store:    store,
+		closedCh: make(chan struct{}),
+	}
 }
 
 /**
@@ -67,21 +83,7 @@ func (q *FirestoreJobQueue) EnqueueFormat(ctx context.Context, id post.DarkPostI
 	if id == "" {
 		return errEmptyPostID
 	}
-
-	doc := q.client.Collection(q.collection).Doc(string(id))
-	payload := map[string]any{
-		"post_id":    string(id),
-		"status":     jobStatusPending,
-		"created_at": firestore.ServerTimestamp,
-	}
-	_, err := doc.Create(ctx, payload)
-	if status.Code(err) == codes.AlreadyExists {
-		return queue.ErrJobAlreadyScheduled
-	}
-	if err != nil {
-		return translateContextError(err)
-	}
-	return nil
+	return q.store.Create(ctx, id)
 }
 
 /**
@@ -153,10 +155,54 @@ func (q *FirestoreJobQueue) ensureReady(ctx context.Context) error {
  * Firestore の format_jobs から一番古いジョブをトランザクションで取得し、その場で削除する。
  */
 func (q *FirestoreJobQueue) dequeueOnce(ctx context.Context) (post.DarkPostID, error) {
-	query := q.client.Collection(q.collection).OrderBy("created_at", firestore.Asc).Limit(1)
+	id, err := q.store.Dequeue(ctx)
+	if err != nil {
+		if errors.Is(err, errNoJobAvailable) {
+			return "", errNoJobAvailable
+		}
+		return "", translateContextError(fmt.Errorf("dequeue tx: %w", err))
+	}
+	return id, nil
+}
+
+/**
+ * コンテキスト関連のエラーを共通の ErrContextClosed にそろえて返す。
+ */
+func translateContextError(err error) error {
+	if err == nil {
+		return nil
+	}
+	// 呼び出し側の文脈が中断・期限切れなら queue.ErrContextClosed に読み替える
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("%w: %v", queue.ErrContextClosed, err)
+	}
+	return err
+}
+
+var _ queue.JobQueue = (*FirestoreJobQueue)(nil)
+
+func (s *firestoreJobQueueStore) Create(ctx context.Context, id post.DarkPostID) error {
+	doc := s.client.Collection(s.collection).Doc(string(id))
+	payload := map[string]any{
+		"post_id":    string(id),
+		"status":     jobStatusPending,
+		"created_at": firestore.ServerTimestamp,
+	}
+	_, err := doc.Create(ctx, payload)
+	if status.Code(err) == codes.AlreadyExists {
+		return queue.ErrJobAlreadyScheduled
+	}
+	if err != nil {
+		return translateContextError(err)
+	}
+	return nil
+}
+
+func (s *firestoreJobQueueStore) Dequeue(ctx context.Context) (post.DarkPostID, error) {
+	query := s.client.Collection(s.collection).OrderBy("created_at", firestore.Asc).Limit(1)
 	var dequeued post.DarkPostID
 	// トランザクションでドキュメント取得と削除をまとめ、複数ワーカーからの重複処理を避ける
-	err := q.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		docs, err := tx.Documents(query).GetAll()
 		if err != nil {
 			return err
@@ -181,28 +227,8 @@ func (q *FirestoreJobQueue) dequeueOnce(ctx context.Context) (post.DarkPostID, e
 		dequeued = post.DarkPostID(job.PostID)
 		return nil
 	}, firestore.MaxAttempts(5))
-	// トランザクション結果をキュー用のエラーへ丸める
 	if err != nil {
-		if errors.Is(err, errNoJobAvailable) {
-			return "", errNoJobAvailable
-		}
-		return "", translateContextError(fmt.Errorf("dequeue tx: %w", err))
+		return "", err
 	}
 	return dequeued, nil
 }
-
-/**
- * コンテキスト関連のエラーを共通の ErrContextClosed にそろえて返す。
- */
-func translateContextError(err error) error {
-	if err == nil {
-		return nil
-	}
-	// 呼び出し側の文脈が中断・期限切れなら queue.ErrContextClosed に読み替える
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return fmt.Errorf("%w: %v", queue.ErrContextClosed, err)
-	}
-	return err
-}
-
-var _ queue.JobQueue = (*FirestoreJobQueue)(nil)

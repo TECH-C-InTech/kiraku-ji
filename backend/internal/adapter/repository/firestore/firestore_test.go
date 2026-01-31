@@ -2,69 +2,15 @@ package firestore
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	drawdomain "backend/internal/domain/draw"
 	"backend/internal/domain/post"
-
-	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
+	"backend/internal/port/repository"
 )
 
-const (
-	testProjectID = "firestore-integration-test"
-)
-
-// newTestFirestoreClient は Firestore エミュレータに接続するクライアントを返す。
-// 環境変数が未設定の場合はテストをスキップする。
-func newTestFirestoreClient(t *testing.T) *firestore.Client {
-	t.Helper()
-	if os.Getenv("FIRESTORE_EMULATOR_HOST") == "" {
-		t.Skip("FIRESTORE_EMULATOR_HOST is not set; skipping Firestore integration tests")
-	}
-	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
-	if projectID == "" {
-		projectID = testProjectID
-	}
-	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, projectID)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = client.Close()
-	})
-	return client
-}
-
-// truncateCollection は指定コレクションの全ドキュメントを削除する。
-func truncateCollection(t *testing.T, client *firestore.Client, collection string) {
-	t.Helper()
-	ctx := context.Background()
-	iter := client.Collection(collection).Documents(ctx)
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if err == iterator.Done {
-				break
-			}
-			t.Fatalf("iterate %s: %v", collection, err)
-		}
-		// エミュレータ上のテストなので 1 件ずつ削除すれば十分。
-		if _, err := doc.Ref.Delete(ctx); err != nil {
-			t.Fatalf("delete doc %s: %v", doc.Ref.ID, err)
-		}
-	}
-}
-func TestDrawRepository_Integration(t *testing.T) {
-	client := newTestFirestoreClient(t)
-	truncateCollection(t, client, drawsCollection)
-
-	repo, err := NewDrawRepository(client)
-	if err != nil {
-		t.Fatalf("new draw repo: %v", err)
-	}
+func TestDrawRepository_CreateGetListReady(t *testing.T) {
+	repo := &DrawRepository{store: newFakeDrawStore()}
 
 	ctx := context.Background()
 	draw, err := drawdomain.New(post.DarkPostID("post-1"), drawdomain.FormattedContent("fortune smiles"))
@@ -92,4 +38,41 @@ func TestDrawRepository_Integration(t *testing.T) {
 	if len(list) != 1 {
 		t.Fatalf("expected 1 draw got %d", len(list))
 	}
+}
+
+type fakeDrawStore struct {
+	items map[post.DarkPostID]drawDocument
+}
+
+func newFakeDrawStore() *fakeDrawStore {
+	return &fakeDrawStore{
+		items: make(map[post.DarkPostID]drawDocument),
+	}
+}
+
+func (s *fakeDrawStore) Create(ctx context.Context, doc drawDocument) error {
+	id := post.DarkPostID(doc.PostID)
+	if _, exists := s.items[id]; exists {
+		return repository.ErrDrawAlreadyExists
+	}
+	s.items[id] = doc
+	return nil
+}
+
+func (s *fakeDrawStore) Get(ctx context.Context, postID post.DarkPostID) (drawDocument, error) {
+	doc, ok := s.items[postID]
+	if !ok {
+		return drawDocument{}, repository.ErrDrawNotFound
+	}
+	return doc, nil
+}
+
+func (s *fakeDrawStore) ListReady(ctx context.Context) ([]drawDocument, error) {
+	var documents []drawDocument
+	for _, doc := range s.items {
+		if doc.Status == string(drawdomain.StatusVerified) {
+			documents = append(documents, doc)
+		}
+	}
+	return documents, nil
 }

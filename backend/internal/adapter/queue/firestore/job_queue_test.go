@@ -3,27 +3,16 @@ package firestore
 import (
 	"context"
 	"errors"
-	"os"
+	"sync"
 	"testing"
 	"time"
 
 	"backend/internal/domain/post"
 	portqueue "backend/internal/port/queue"
-
-	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 )
 
-const testProjectID = "firestore-integration-test"
-
 func TestFirestoreJobQueue_EnqueueAndDequeue(t *testing.T) {
-	client := newTestFirestoreClient(t)
-	truncateCollection(t, client, formatJobsCollection)
-
-	queue, err := NewFirestoreJobQueue(client)
-	if err != nil {
-		t.Fatalf("NewFirestoreJobQueue: %v", err)
-	}
+	queue := newFirestoreJobQueueWithStore(newFakeJobQueueStore())
 
 	ctx := context.Background()
 	if err := queue.EnqueueFormat(ctx, post.DarkPostID("post-firestore-1")); err != nil {
@@ -40,13 +29,7 @@ func TestFirestoreJobQueue_EnqueueAndDequeue(t *testing.T) {
 }
 
 func TestFirestoreJobQueue_DuplicateEnqueueReturnsError(t *testing.T) {
-	client := newTestFirestoreClient(t)
-	truncateCollection(t, client, formatJobsCollection)
-
-	queue, err := NewFirestoreJobQueue(client)
-	if err != nil {
-		t.Fatalf("NewFirestoreJobQueue: %v", err)
-	}
+	queue := newFirestoreJobQueueWithStore(newFakeJobQueueStore())
 
 	ctx := context.Background()
 	if err := queue.EnqueueFormat(ctx, post.DarkPostID("dup-post")); err != nil {
@@ -58,13 +41,7 @@ func TestFirestoreJobQueue_DuplicateEnqueueReturnsError(t *testing.T) {
 }
 
 func TestFirestoreJobQueue_DequeueWaitsForNewJob(t *testing.T) {
-	client := newTestFirestoreClient(t)
-	truncateCollection(t, client, formatJobsCollection)
-
-	queue, err := NewFirestoreJobQueue(client)
-	if err != nil {
-		t.Fatalf("NewFirestoreJobQueue: %v", err)
-	}
+	queue := newFirestoreJobQueueWithStore(newFakeJobQueueStore())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -98,13 +75,7 @@ func TestFirestoreJobQueue_DequeueWaitsForNewJob(t *testing.T) {
 }
 
 func TestFirestoreJobQueue_CloseStopsOperations(t *testing.T) {
-	client := newTestFirestoreClient(t)
-	truncateCollection(t, client, formatJobsCollection)
-
-	queue, err := NewFirestoreJobQueue(client)
-	if err != nil {
-		t.Fatalf("NewFirestoreJobQueue: %v", err)
-	}
+	queue := newFirestoreJobQueueWithStore(newFakeJobQueueStore())
 	if err := queue.Close(); err != nil {
 		t.Fatalf("close returned error: %v", err)
 	}
@@ -113,7 +84,7 @@ func TestFirestoreJobQueue_CloseStopsOperations(t *testing.T) {
 		t.Fatalf("expected ErrQueueClosed on enqueue, got %v", err)
 	}
 
-	_, err = queue.DequeueFormat(context.Background())
+	_, err := queue.DequeueFormat(context.Background())
 	if !errors.Is(err, portqueue.ErrQueueClosed) {
 		t.Fatalf("expected ErrQueueClosed on dequeue, got %v", err)
 	}
@@ -121,60 +92,58 @@ func TestFirestoreJobQueue_CloseStopsOperations(t *testing.T) {
 
 // Dequeue 中にコンテキストが閉じた場合に適切なエラーへ変換されるかを確認する
 func TestFirestoreJobQueue_DequeueContextCanceled(t *testing.T) {
-	client := newTestFirestoreClient(t)
-	truncateCollection(t, client, formatJobsCollection)
-
-	queue, err := NewFirestoreJobQueue(client)
-	if err != nil {
-		t.Fatalf("NewFirestoreJobQueue: %v", err)
-	}
+	queue := newFirestoreJobQueueWithStore(newFakeJobQueueStore())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	_, err = queue.DequeueFormat(ctx)
+	_, err := queue.DequeueFormat(ctx)
 	if err == nil || !errors.Is(err, portqueue.ErrContextClosed) {
 		t.Fatalf("expected ErrContextClosed, got %v", err)
 	}
 }
 
-// newTestFirestoreClient は Firestore エミュレータに接続するクライアントを返す。
-func newTestFirestoreClient(t *testing.T) *firestore.Client {
-	t.Helper()
-	if os.Getenv("FIRESTORE_EMULATOR_HOST") == "" {
-		t.Skip("FIRESTORE_EMULATOR_HOST is not set; skipping Firestore queue tests")
-	}
-	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
-	if projectID == "" {
-		projectID = testProjectID
-	}
-	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, projectID)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = client.Close()
-	})
-	return client
+type fakeJobQueueStore struct {
+	mu    sync.Mutex
+	seq   int64
+	items map[post.DarkPostID]int64
 }
 
-// truncateCollection は指定コレクションを空にする。
-func truncateCollection(t *testing.T, client *firestore.Client, collection string) {
-	t.Helper()
-	ctx := context.Background()
-	iter := client.Collection(collection).Documents(ctx)
-	defer iter.Stop()
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if err == iterator.Done {
-				break
-			}
-			t.Fatalf("iterate %s: %v", collection, err)
-		}
-		if _, err := doc.Ref.Delete(ctx); err != nil {
-			t.Fatalf("delete doc %s: %v", doc.Ref.ID, err)
+func newFakeJobQueueStore() *fakeJobQueueStore {
+	return &fakeJobQueueStore{
+		items: make(map[post.DarkPostID]int64),
+	}
+}
+
+func (s *fakeJobQueueStore) Create(ctx context.Context, id post.DarkPostID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.items[id]; exists {
+		return portqueue.ErrJobAlreadyScheduled
+	}
+	s.seq++
+	s.items[id] = s.seq
+	return nil
+}
+
+func (s *fakeJobQueueStore) Dequeue(ctx context.Context) (post.DarkPostID, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.items) == 0 {
+		return "", errNoJobAvailable
+	}
+	var (
+		selectedID   post.DarkPostID
+		selectedSeq int64
+		found       bool
+	)
+	for id, seq := range s.items {
+		if !found || seq < selectedSeq {
+			selectedID = id
+			selectedSeq = seq
+			found = true
 		}
 	}
+	delete(s.items, selectedID)
+	return selectedID, nil
 }

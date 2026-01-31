@@ -29,15 +29,32 @@ var (
 
 // ポインタですよということでfirestoreの接続などが実行できる
 type DrawRepository struct {
+	store drawStore
+}
+
+type drawDocument struct {
+	PostID string `firestore:"post_id"`
+	Result string `firestore:"result"`
+	Status string `firestore:"status"`
+}
+
+type drawStore interface {
+	Create(ctx context.Context, doc drawDocument) error
+	Get(ctx context.Context, postID post.DarkPostID) (drawDocument, error)
+	ListReady(ctx context.Context) ([]drawDocument, error)
+}
+
+type firestoreDrawStore struct {
 	client *firestore.Client
 }
 
 // NewDrawRepository は Firestore を利用するリポジトリを生成する。
 func NewDrawRepository(client *firestore.Client) (*DrawRepository, error) {
-	if client == nil {
-		return nil, errMissingRepository
+	store, err := newFirestoreDrawStore(client)
+	if err != nil {
+		return nil, err
 	}
-	return &DrawRepository{client: client}, nil
+	return &DrawRepository{store: store}, nil
 }
 
 // Create は Draw を Firestore に保存する。
@@ -50,17 +67,74 @@ func (r *DrawRepository) Create(ctx context.Context, d *drawdomain.Draw) error {
 		return errEmptyPostID
 	}
 
-	doc := r.client.Collection(drawsCollection).Doc(string(postID))
-	// Firestore に保存するフィールド群。
-	data := map[string]interface{}{
-		"post_id":    string(d.PostID()),
-		"result":     string(d.Result()),
-		"status":     string(d.Status()),
-		"created_at": firestore.ServerTimestamp,
+	doc := drawDocument{
+		PostID: string(d.PostID()),
+		Result: string(d.Result()),
+		Status: string(d.Status()),
+	}
+	return r.store.Create(ctx, doc)
+}
+
+// GetByPostID は Firestore から Draw を取得する。
+func (r *DrawRepository) GetByPostID(ctx context.Context, postID post.DarkPostID) (*drawdomain.Draw, error) {
+	if postID == "" {
+		return nil, repository.ErrDrawNotFound
 	}
 
-	//保存するときのエラーチェック
-	_, err := doc.Create(ctx, data)
+	doc, err := r.store.Get(ctx, postID)
+	if err != nil {
+		return nil, err
+	}
+
+	return restoreDrawFromDocument(doc)
+}
+
+// ListReady は Verified な Draw を Firestore から列挙する。
+func (r *DrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, error) {
+	documents, err := r.store.ListReady(ctx)
+	if err != nil {
+		return nil, err
+	}
+	draws := make([]*drawdomain.Draw, 0, len(documents))
+	for _, doc := range documents {
+		d, err := restoreDrawFromDocument(doc)
+		if err != nil {
+			return nil, err
+		}
+		draws = append(draws, d)
+	}
+	return draws, nil
+}
+
+// restoreDrawFromDocument は Draw の保存データからドメインを復元する。
+func restoreDrawFromDocument(payload drawDocument) (*drawdomain.Draw, error) {
+	restored, err := drawdomain.Restore(
+		post.DarkPostID(payload.PostID),
+		drawdomain.FormattedContent(payload.Result),
+		drawdomain.Status(payload.Status),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("restore draw: %w", err)
+	}
+	return restored, nil
+}
+
+func newFirestoreDrawStore(client *firestore.Client) (*firestoreDrawStore, error) {
+	if client == nil {
+		return nil, errMissingRepository
+	}
+	return &firestoreDrawStore{client: client}, nil
+}
+
+func (s *firestoreDrawStore) Create(ctx context.Context, doc drawDocument) error {
+	ref := s.client.Collection(drawsCollection).Doc(doc.PostID)
+	data := map[string]interface{}{
+		"post_id":    doc.PostID,
+		"result":     doc.Result,
+		"status":     doc.Status,
+		"created_at": firestore.ServerTimestamp,
+	}
+	_, err := ref.Create(ctx, data)
 	if status.Code(err) == codes.AlreadyExists {
 		return repository.ErrDrawAlreadyExists
 	}
@@ -70,32 +144,28 @@ func (r *DrawRepository) Create(ctx context.Context, d *drawdomain.Draw) error {
 	return nil
 }
 
-// GetByPostID は Firestore から Draw を取得する。
-func (r *DrawRepository) GetByPostID(ctx context.Context, postID post.DarkPostID) (*drawdomain.Draw, error) {
-	if postID == "" {
-		return nil, repository.ErrDrawNotFound
-	}
-
-	doc, err := r.client.Collection(drawsCollection).Doc(string(postID)).Get(ctx)
+func (s *firestoreDrawStore) Get(ctx context.Context, postID post.DarkPostID) (drawDocument, error) {
+	doc, err := s.client.Collection(drawsCollection).Doc(string(postID)).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return nil, repository.ErrDrawNotFound
+			return drawDocument{}, repository.ErrDrawNotFound
 		}
-		return nil, fmt.Errorf("get draw document: %w", err)
+		return drawDocument{}, fmt.Errorf("get draw document: %w", err)
 	}
-
-	return restoreDrawFromDoc(doc)
+	var payload drawDocument
+	if err := doc.DataTo(&payload); err != nil {
+		return drawDocument{}, fmt.Errorf("decode draw document: %w", err)
+	}
+	return payload, nil
 }
 
-// ListReady は Verified な Draw を Firestore から列挙する。
-func (r *DrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, error) {
-	// status が verified の個体のみ抽出するクエリ。
-	iter := r.client.Collection(drawsCollection).
+func (s *firestoreDrawStore) ListReady(ctx context.Context) ([]drawDocument, error) {
+	iter := s.client.Collection(drawsCollection).
 		Where("status", "==", string(drawdomain.StatusVerified)).
 		Documents(ctx)
 	defer iter.Stop()
 
-	var draws []*drawdomain.Draw
+	var documents []drawDocument
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {
@@ -104,31 +174,11 @@ func (r *DrawRepository) ListReady(ctx context.Context) ([]*drawdomain.Draw, err
 		if err != nil {
 			return nil, fmt.Errorf("iterate verified draws: %w", err)
 		}
-
-		d, err := restoreDrawFromDoc(doc)
-		if err != nil {
-			return nil, err
+		var payload drawDocument
+		if err := doc.DataTo(&payload); err != nil {
+			return nil, fmt.Errorf("decode draw document: %w", err)
 		}
-		draws = append(draws, d)
+		documents = append(documents, payload)
 	}
-
-	return draws, nil
-}
-
-// restoreDrawFromDoc は Firestore ドキュメントをドメインオブジェクトに変換する。
-func restoreDrawFromDoc(doc *firestore.DocumentSnapshot) (*drawdomain.Draw, error) {
-	var payload struct {
-		PostID string `firestore:"post_id"`
-		Result string `firestore:"result"`
-		Status string `firestore:"status"`
-	}
-	if err := doc.DataTo(&payload); err != nil {
-		return nil, fmt.Errorf("decode draw document: %w", err)
-	}
-
-	restored, err := drawdomain.Restore(post.DarkPostID(payload.PostID), drawdomain.FormattedContent(payload.Result), drawdomain.Status(payload.Status))
-	if err != nil {
-		return nil, fmt.Errorf("restore draw: %w", err)
-	}
-	return restored, nil
+	return documents, nil
 }

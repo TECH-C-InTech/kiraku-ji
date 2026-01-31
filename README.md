@@ -6,7 +6,7 @@
 - 言語: Go 1.25 系
 - フレームワーク/主要ライブラリ: Gin、Google Cloud Firestore クライアント、Google Generative AI SDK、OpenAI クライアント、gRPC
 - アーキテクチャ: クリーンアーキテクチャ（Hexagonal 寄り）。API サーバーと非同期 Worker を分離し、usecase 層にビジネスロジックを集約し、外部依存は adapter/port で分離
-- データベース: Google Cloud Firestore（本番環境に接続。Emulator は未サポート）
+- データベース: Google Cloud Firestore（本番環境に接続）
 - デプロイ: Cloud Run でバックエンドプロセスをホスティング
 
 ## フロントエンド

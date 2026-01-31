@@ -212,7 +212,6 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 | --- | --- |
 | `GOOGLE_CLOUD_PROJECT` | Firestore を利用する GCP / Firebase プロジェクト ID（必須） |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Firestore へ接続するサービスアカウント JSON のパス（必須） |
-| `FIRESTORE_EMULATOR_HOST` | Firestore Emulator を利用する場合のホスト名（Worker など開発用） |
 | `GEMINI_API_KEY` | Gemini formatter を使用する際の API キー |
 | `GEMINI_MODEL` | 利用する Gemini モデル名（未設定時は `gemini-2.5-flash`） |
 | `OPENAI_API_KEY` | OpenAI formatter を使用する際の API キー |
@@ -222,7 +221,7 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 
 `GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` が未設定の場合、Infra の初期化が失敗し API / Worker は起動しません。Worker も API と同様に Firestore リポジトリ固定のため、必ず同じ環境変数を用意してください。JobQueue も Firestore 固定 (`format_jobs` コレクション) のため、切り替え用の環境変数は存在しません。
 
-### API を Firestore へ接続する（エミュレータ非対応）
+### API を Firestore へ接続する
 
 1. Firebase もしくは GCP で Firestore を有効化し、API から投稿を書き込むプロジェクト ID を決める。
 2. 対象プロジェクトでサービスアカウント（Cloud Datastore User 権限以上）を作成し、JSON キーをダウンロードする。
@@ -245,8 +244,6 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
      -d '{"post_id":"post-123","content":"闇の投稿です"}'
    ```
 
-> API は Firestore Emulator をサポートしていません。常に本番と同じ Firestore（サービスアカウント JSON 経由）へ接続してください。
-
 ワーカーも同じ Firestore を共有します。Firestore 待ち受けが未設定のまま `go run ./cmd/worker` を起動した場合はエラーで即終了するため、API と同じく `GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` を先に指定してください。
 
 ### コレクションスキーマ
@@ -263,11 +260,8 @@ API / Worker から Firestore を利用する際は、`internal/app` が 1 度�
 ```
 cd backend
 export GOOGLE_CLOUD_PROJECT=your-project
-# Firestore Emulator を使う場合は FIRESTORE_EMULATOR_HOST も設定
 go run ./cmd/seed
 ```
-
-エミュレータ利用時は `gcloud beta emulators firestore start --host-port=localhost:8080` を別ターミナルで起動してから実行してください。
 
 ## ワーカー起動方法
 
